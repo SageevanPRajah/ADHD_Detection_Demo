@@ -19,7 +19,7 @@ export const ACTIONS = [
   },
 ];
 
-export const FREEZE_VIDEO = "/body posture video/freezze.mp4";
+export const FREEZE_VIDEO = "/body posture video/freeze_new.mp4";
 
 export function pickAction() {
   return ACTIONS[Math.floor(Math.random() * ACTIONS.length)];

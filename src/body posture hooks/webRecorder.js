@@ -105,11 +105,40 @@ export default function useWebcamRecorder() {
     });
   }, []);
 
+  const stopStream = useCallback(() => {
+    try {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {
+      // ignore
+    }
+
+    const stream = streamRef.current;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+    }
+
+    streamRef.current = null;
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
+    setRecording(false);
+
+    if (videoRef.current) {
+      videoRef.current.pause?.();
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
   return {
     videoRef,
     setupStream,
     startRecording,
     stopRecording,
+    stopStream,
     recording,
   };
 }

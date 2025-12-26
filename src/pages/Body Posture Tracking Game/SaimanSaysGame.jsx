@@ -34,24 +34,16 @@ export default function SaimanSaysGame() {
   const [cameraError, setCameraError] = useState("");
   const [lastRecording, setLastRecording] = useState(null);
 
-  const { videoRef, setupStream, startRecording, stopRecording } =
+  const { videoRef, setupStream, startRecording, stopRecording, stopStream } =
     useWebcamRecorder();
 
   const sessionTimerRef = useRef(null);
-  const stepTimerRef = useRef(null);
+  const actionTimerRef = useRef(null);
+  const cycleTimerRef = useRef(null);
 
   /* ================= CAMERA ================= */
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const ok = await setupStream();
-      if (!mounted) return;
-      setCameraReady(ok);
-      setCameraError(ok ? "" : "Camera permission required.");
-    })();
-    return () => (mounted = false);
-  }, [setupStream]);
+  // Camera turns on only when Start is pressed.
 
   /* ================= GLOBAL TIMER ================= */
 
@@ -73,35 +65,37 @@ export default function SaimanSaysGame() {
 
   /* ================= GAME LOOP ================= */
 
-  const nextStep = useCallback(() => {
-    if (mode === "action") {
-      const action = pickAction();
-      setCurrentVideo(action.video);
-      setCurrentText(action.text);
+  const stopGameLoop = useCallback(() => {
+    clearTimeout(actionTimerRef.current);
+    clearTimeout(cycleTimerRef.current);
+    actionTimerRef.current = null;
+    cycleTimerRef.current = null;
+  }, []);
+
+  const runRound = useCallback(() => {
+    const action = pickAction();
+    setCurrentVideo(action.video);
+    setCurrentText(action.text);
+    setMode("action");
+    setRoundCount((r) => r + 1);
+
+    clearTimeout(actionTimerRef.current);
+    actionTimerRef.current = setTimeout(() => {
+      setCurrentVideo(FREEZE_VIDEO);
+      setCurrentText("FREEZE! 🧊");
       setMode("freeze");
-      setRoundCount((r) => r + 1);
 
-      stepTimerRef.current = setTimeout(() => {
-        setCurrentVideo(FREEZE_VIDEO);
-        setCurrentText("FREEZE! 🧊");
-      }, ACTION_DURATION * 1000);
-    } else {
-      setMode("action");
-    }
-  }, [mode]);
+      clearTimeout(cycleTimerRef.current);
+      cycleTimerRef.current = setTimeout(() => {
+        runRound();
+      }, FREEZE_DURATION * 1000);
+    }, ACTION_DURATION * 1000);
+  }, []);
 
-  const startGameLoop = () => {
-    nextStep();
-    stepTimerRef.current = setInterval(
-      nextStep,
-      (ACTION_DURATION + FREEZE_DURATION) * 1000
-    );
-  };
-
-  const stopGameLoop = () => {
-    clearInterval(stepTimerRef.current);
-    stepTimerRef.current = null;
-  };
+  const startGameLoop = useCallback(() => {
+    stopGameLoop();
+    runRound();
+  }, [runRound, stopGameLoop]);
 
   /* ================= START / STOP ================= */
 
@@ -109,6 +103,11 @@ export default function SaimanSaysGame() {
     setTimeLeft(TOTAL_SESSION_SECONDS);
     setRoundCount(0);
     setAdhdResult(null);
+
+    const okStream = await setupStream();
+    setCameraReady(okStream);
+    setCameraError(okStream ? "" : "Camera permission required.");
+    if (!okStream) return;
 
     const ok = await startRecording();
     if (!ok) {
@@ -126,6 +125,10 @@ export default function SaimanSaysGame() {
 
     const blob = await stopRecording();
     setLastRecording(blob);
+
+    // turn camera OFF completely
+    stopStream();
+    setCameraReady(false);
 
     setApiStatus("loading");
     const result = await sendAdhdSession(
@@ -165,64 +168,120 @@ export default function SaimanSaysGame() {
 
       {/* GAME AREA */}
       <main className="px-5 pb-5">
-        <div className="rounded-[2rem] bg-white/10 border border-white/20 p-10 shadow-2xl">
-          <div className="flex justify-between mb-6 text-lg">
-            <span>⏱ {formatTime(timeLeft)}</span>
-            <span>🔁 {roundCount}</span>
+        
+       {/* GAME AREA */}
+<div className="p-8 border rounded-[2.5rem] bg-white/10 border-white/20 shadow-2xl">
+
+  {/* TOP STATUS BAR */}
+  <div className="flex justify-between mb-6 text-lg font-semibold text-white/80">
+    <span>⏱ Time: {formatTime(timeLeft)}</span>
+    <span>🔁 Rounds: {roundCount}</span>
+  </div>
+
+  {/* ACTION TEXT */}
+  <h2 className="mb-8 text-5xl font-black tracking-wide text-center">
+    {currentText || "Get Ready Hero!"}
+  </h2>
+
+  {/* 2 COLUMN LAYOUT */}
+  <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+
+    {/* LEFT — SAIMAN ACTION VIDEO */}
+    <div className="flex flex-col items-center">
+      <p className="mb-3 text-sm font-bold tracking-wide uppercase text-cyan-300">
+        Watch Saiman
+      </p>
+
+      <div className="relative  overflow-hidden rounded-3xl border border-white/30 bg-black/60 aspect-video min-h-[400px]">
+
+        {running ? (
+          <ActionVideo src={currentVideo} />
+        ) : (
+          <div className="flex items-center justify-center h-64 text-white/60">
+            Action video appears here
           </div>
+        )}
+      </div>
 
-          <h2 className="mb-6 text-5xl font-black text-center">
-            {currentText}
-          </h2>
+      <p className="mt-3 text-sm text-center text-white/70">
+        Copy Saiman&apos;s move exactly
+      </p>
+    </div>
 
-          {running && (
-            <div className="flex justify-center mb-8">
-              <ActionVideo src={currentVideo} />
-            </div>
-          )}
+    {/* RIGHT — LIVE CAMERA */}
+    <div className="flex flex-col items-center">
+      <p className="mb-3 text-sm font-bold tracking-wide text-yellow-300 uppercase">
+        You on Camera
+      </p>
 
-          <div className="relative overflow-hidden border aspect-video rounded-3xl bg-black/50 border-white/20">
-            <video
-              ref={videoRef}
-              className="object-cover w-full h-full"
-              autoPlay
-              muted
-              playsInline
-            />
-            {(!cameraReady || !running) && (
-              <div className="absolute inset-0 flex items-center justify-center text-lg bg-black/60">
-                {cameraError || "Press Start to begin"}
-              </div>
-            )}
+      <div className="relative  overflow-hidden rounded-3xl border border-white/30 bg-black/60 aspect-video min-h-[400px]">
+
+        <video
+          ref={videoRef}
+          className="object-cover w-full h-full"
+          autoPlay
+          muted
+          playsInline
+        />
+
+        {/* CAMERA OVERLAY */}
+        {(!cameraReady || !running) && (
+          <div className="absolute inset-0 flex items-center justify-center px-6 text-lg text-center bg-black/70 text-white/80">
+            {cameraError || "Press Start to begin"}
           </div>
+        )}
 
-          {/* CONTROLS */}
-          <div className="flex justify-center gap-6 mt-10">
-            <button
-              onClick={startSession}
-              disabled={running}
-              className={`px-10 py-4 text-xl font-bold rounded-2xl ${
-                running
-                  ? "bg-gray-500"
-                  : "bg-green-400 hover:bg-green-300 text-black"
-              }`}
-            >
-              Start Game
-            </button>
-
-            <button
-              onClick={endSession}
-              disabled={!running}
-              className={`px-10 py-4 text-xl font-bold rounded-2xl ${
-                running
-                  ? "bg-red-500 hover:bg-red-400"
-                  : "bg-gray-500"
-              }`}
-            >
-              Stop
-            </button>
+        {/* FREEZE VISUAL */}
+        {mode === "freeze" && running && (
+          <div className="absolute inset-0 flex items-center justify-center bg-blue-900/40 backdrop-blur-sm">
+          
           </div>
-        </div>
+        )}
+      </div>
+
+      <p className="mt-3 text-sm text-center text-white/70">
+        Stay inside the camera box
+      </p>
+    </div>
+
+  </div>
+
+  {/* CONTROLS */}
+  <div className="flex justify-center gap-8 mt-10">
+    <button
+      onClick={startSession}
+      disabled={running}
+      className={`px-12 py-4 text-xl font-black rounded-2xl transition ${
+        running
+          ? "bg-gray-500"
+          : "bg-green-400 hover:bg-green-300 text-black"
+      }`}
+    >
+      Start Game
+    </button>
+
+    <button
+      onClick={endSession}
+      disabled={!running}
+      className={`px-12 py-4 text-xl font-black rounded-2xl transition ${
+        running
+          ? "bg-red-500 hover:bg-red-400"
+          : "bg-gray-500"
+      }`}
+    >
+      Stop
+    </button>
+  </div>
+</div>
+
+         
+         <button
+            onClick={() => navigate("/saiman-result")}  
+            className="w-full py-4 mt-10 rounded-2xl bg-white/20 hover:bg-white/30"
+          >
+            View Result Page
+          </button>
+        
 
         {/* RESULT */}
         <div className="max-w-3xl p-8 mx-auto mt-10 border rounded-3xl bg-white/10 border-white/20">

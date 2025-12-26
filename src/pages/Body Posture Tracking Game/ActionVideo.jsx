@@ -10,9 +10,8 @@ export default function ActionVideo({ src }) {
       key={src}
       src={src}
       autoPlay
-      
       playsInline
-      className="mt-6 border shadow-xl w-96 rounded-3xl border-white/20"
+      className="object-cover w-full h-full"
     />
   );
 }
