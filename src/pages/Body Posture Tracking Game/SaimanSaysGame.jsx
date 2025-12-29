@@ -151,6 +151,19 @@ export default function SaimanSaysGame() {
       sec % 60
     ).padStart(2, "0")}`;
 
+  const triggerDownload = (blob) => {
+    if (!blob) return;
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `saiman-says-recording-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   /* ================= RENDER ================= */
 
   return (
@@ -276,19 +289,26 @@ export default function SaimanSaysGame() {
 
          
          <button
-            onClick={() => navigate("/saiman-result")}  
-            className="w-full py-4 mt-10 rounded-2xl bg-white/20 hover:bg-white/30"
+            onClick={() => {
+              if (adhdResult) {
+                localStorage.setItem('saimanAdhdResult', JSON.stringify(adhdResult));
+              }
+              navigate("/saiman-result");
+            }}  
+            className={`w-full py-4 mt-10 rounded-2xl transition ${
+              adhdResult 
+                ? "bg-white/20 hover:bg-white/30 cursor-pointer" 
+                : apiStatus === "loading"
+                ? "bg-white/10 cursor-wait opacity-50"
+                : "bg-white/20 hover:bg-white/30 cursor-pointer"
+            }`}
+            disabled={apiStatus === "loading"}
           >
-            View Result Page
+            {apiStatus === "loading" ? "Analyzing..." : "View Result Page"}
           </button>
         
 
-        {/* RESULT */}
-        <div className="max-w-3xl p-8 mx-auto mt-10 border rounded-3xl bg-white/10 border-white/20">
-          <h3 className="mb-4 text-2xl font-bold">🧠 Result</h3>
-          {apiStatus === "loading" && <p>Analyzing…</p>}
-          {apiStatus === "idle" && <ScorePanel result={adhdResult} />}
-        </div>
+       
 
         {/* DOWNLOAD */}
         <div className="max-w-3xl mx-auto mt-8">
