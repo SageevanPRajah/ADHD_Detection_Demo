@@ -9,6 +9,8 @@ import SaimanInstructions from "./pages/Body Posture Tracking Game/SaimanInstruc
 import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.jsx";
 import Result from "./pages/Body Posture Tracking Game/result.jsx";
 
+import Eyetrack from "./pages/eyetrack/Eyetrack.jsx";
+
 function App() {
   return (
     <Routes>
@@ -17,9 +19,13 @@ function App() {
       <Route path="/parent" element={<ParentPanel />} />
       <Route path="/guest" element={<GuestPanel />} />
       <Route path="/admin" element={<AdminPanel />} />
+      
       <Route path="/saiman-game" element={<SaimanSaysGame />} />
       <Route path="/saiman-instructions" element={<SaimanInstructions />} />
       <Route path="/saiman-result" element={<Result />} />
+
+      <Route path="/eyetrack" element={<Eyetrack />} />
+
     </Routes>
   );
 }
