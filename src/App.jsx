@@ -10,6 +10,10 @@ import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.js
 import Result from "./pages/Body Posture Tracking Game/result.jsx";
 
 import Eyetrack from "./pages/eyetrack/Eyetrack.jsx";
+import EyeTrackTerms from "./pages/eyetrack/EyeTrackTerms.jsx";
+import EyeTrackIntro from "./pages/eyetrack/EyeTrackIntro.jsx";
+import ChildEyeGame from "./pages/eyetrack/game/ChildEyeGame.jsx"; 
+import Eyecollect from "./pages/eyetrack/game/Eyecollect.jsx"; 
 
 function App() {
   return (
@@ -25,6 +29,10 @@ function App() {
       <Route path="/saiman-result" element={<Result />} />
 
       <Route path="/eyetrack" element={<Eyetrack />} />
+      <Route path="/eyetrack/terms" element={<EyeTrackTerms />} />
+      <Route path="/eyetrack/intro" element={<EyeTrackIntro />} />
+      <Route path="/eyetrack/child-game" element={<ChildEyeGame />} />
+      <Route path="/eyecollect" element={<Eyecollect />} />
 
     </Routes>
   );

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Dashboard from "../components/Dashboard.jsx";
 import { Eye, Activity, Mic, PenTool, ExternalLink } from "lucide-react";
 
@@ -139,10 +140,8 @@ const AdminPanel = () => {
             </p>
 
             <div className="mt-3 space-y-2 text-xs">
-              <a
-                href="https://eye-tracking-simulation.vercel.app/"
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                to="/eyecollect"
                 className="flex items-center justify-between rounded-xl border border-slate-700/80 bg-black/25 px-3 py-2 text-slate-200 transition hover:border-clinic-primary hover:bg-clinic-primary/10"
               >
                 <span className="flex items-center gap-2">
@@ -150,7 +149,7 @@ const AdminPanel = () => {
                   Eye Tracking Data Collection
                 </span>
                 <ExternalLink className="h-3 w-3 text-slate-400" />
-              </a>
+              </Link>
 
               <a
                 href="https://adhd-poses-detection-games.vercel.app/"
