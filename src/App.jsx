@@ -7,7 +7,7 @@ import GuestPanel from "./pages/GuestPanel.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import SaimanInstructions from "./pages/Body Posture Tracking Game/SaimanInstructions.jsx";
 import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.jsx";
-import Result from "./pages/Body Posture Tracking Game/result.jsx";
+import SaimanResult from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 
 function App() {
   return (
@@ -19,7 +19,9 @@ function App() {
       <Route path="/admin" element={<AdminPanel />} />
       <Route path="/saiman-game" element={<SaimanSaysGame />} />
       <Route path="/saiman-instructions" element={<SaimanInstructions />} />
-      <Route path="/saiman-result" element={<Result />} />
+      <Route path="/saiman-result" element={<SaimanResult />} />
+
+
     </Routes>
   );
 }
