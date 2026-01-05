@@ -12,6 +12,7 @@ import {
   PauseCircle,
   Eye
 } from "lucide-react";
+import { predictFromJSON } from "../handwriting util/api.js";
 
 /* ===================== DATA ===================== */
 
@@ -115,6 +116,112 @@ export default function HandwritingGame() {
 
     /* ===================== JSON UPLOAD ===================== */
 
+  // Transform frontend JSON format to backend expected format
+  const transformToBackendFormat = (data) => {
+    // If already in backend format, return as is
+    if (data && data.performanceMetrics && data.drawingData) {
+      return data;
+    }
+
+    // Otherwise, transform from frontend format
+    if (!data || !data.strokes || data.strokes.length === 0) {
+      throw new Error("Invalid JSON format: missing strokes data");
+    }
+
+    const strokes = data.strokes;
+    
+    // Group strokes by start/move sequences
+    const strokeGroups = [];
+    let currentStroke = null;
+    
+    for (let i = 0; i < strokes.length; i++) {
+      const point = strokes[i];
+      
+      if (point.type === "start") {
+        // Save previous stroke if exists
+        if (currentStroke && currentStroke.keyPoints.length > 1) {
+          strokeGroups.push(currentStroke);
+        }
+        // Start new stroke
+        currentStroke = {
+          keyPoints: [{ x: point.x, y: point.y, timestamp: point.timestamp }],
+          startTime: point.timestamp
+        };
+      } else if (point.type === "move" && currentStroke) {
+        currentStroke.keyPoints.push({ x: point.x, y: point.y, timestamp: point.timestamp });
+      }
+    }
+    
+    // Add last stroke if exists
+    if (currentStroke && currentStroke.keyPoints.length > 1) {
+      strokeGroups.push(currentStroke);
+    }
+
+    // Calculate metrics for each stroke
+    const drawingData = strokeGroups.map(stroke => {
+      const keyPoints = stroke.keyPoints;
+      const duration = (keyPoints[keyPoints.length - 1].timestamp - keyPoints[0].timestamp) / 1000; // in seconds
+      
+      // Calculate stroke length
+      let totalLength = 0;
+      for (let i = 1; i < keyPoints.length; i++) {
+        const dx = keyPoints[i].x - keyPoints[i - 1].x;
+        const dy = keyPoints[i].y - keyPoints[i - 1].y;
+        totalLength += Math.sqrt(dx * dx + dy * dy);
+      }
+      
+      // Calculate average pressure (using penSize from data or default)
+      const avgPressure = data.penSize || 8;
+      
+      return {
+        strokeLength: totalLength,
+        duration: duration || 0.001, // avoid division by zero
+        averagePressure: avgPressure,
+        keyPoints: keyPoints
+      };
+    });
+
+    // Calculate overall performance metrics
+    const totalStrokes = drawingData.length;
+    const dataPoints = strokes.length;
+    const firstTimestamp = strokes[0]?.timestamp || 0;
+    const lastTimestamp = strokes[strokes.length - 1]?.timestamp || firstTimestamp;
+    const activityDuration = Math.max(0.1, (lastTimestamp - firstTimestamp) / 1000); // in seconds, minimum 0.1s
+    
+    const avgStrokeLength = drawingData.length > 0
+      ? drawingData.reduce((sum, s) => sum + s.strokeLength, 0) / drawingData.length
+      : 0;
+    
+    const completionSpeed = avgStrokeLength / activityDuration;
+    
+    // Estimate pause count (gaps between strokes > 200ms)
+    let pauseCount = 0;
+    for (let i = 0; i < strokeGroups.length - 1; i++) {
+      const gap = (strokeGroups[i + 1].startTime - strokeGroups[i].keyPoints[strokeGroups[i].keyPoints.length - 1].timestamp) / 1000;
+      if (gap > 0.2) pauseCount++;
+    }
+    
+    const pressures = drawingData.map(s => s.averagePressure);
+    const pressureVariation = pressures.length > 0
+      ? Math.max(...pressures) - Math.min(...pressures)
+      : 0;
+
+    const performanceMetrics = {
+      totalStrokes,
+      dataPoints,
+      activityDuration,
+      averageStrokeLength: avgStrokeLength,
+      completionSpeed,
+      pauseCount,
+      pressureVariation
+    };
+
+    return {
+      performanceMetrics,
+      drawingData
+    };
+  };
+
   const handleJSONUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -126,34 +233,52 @@ export default function HandwritingGame() {
         setUploadedJSON(parsed);
         setPredictionResult(null);
       } catch (err) {
-        alert("Invalid JSON file");
+        alert("Invalid JSON file: " + err.message);
       }
     };
     reader.readAsText(file);
   };
   
-    const analyzeUploadedJSON = async () => {
+  const analyzeUploadedJSON = async () => {
     if (!uploadedJSON) return;
 
     setAnalysisLoading(true);
+    setPredictionResult(null);
 
     try {
-      const response = await fetch("http://localhost:8000/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          json_data: uploadedJSON,
-          age: analysisAge,
-          gender: analysisGender
-        })
-      });
-
-      const data = await response.json();
-      setPredictionResult(data);
+      // Transform frontend format to backend format
+      const transformedData = transformToBackendFormat(uploadedJSON);
+      
+      // Use the API utility function
+      const result = await predictFromJSON(transformedData, analysisAge, analysisGender);
+      setPredictionResult(result);
     } catch (error) {
-      alert("Error connecting to backend");
+      console.error("Analysis error:", error);
+      
+      // Parse error message from backend if available
+      let errorMessage = "Error analyzing file: ";
+      try {
+        if (error.message) {
+          const errorText = error.message;
+          // Try to parse JSON error if it's a JSON response
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage += errorJson.error || errorText;
+          } catch {
+            errorMessage += errorText;
+          }
+        } else {
+          errorMessage += "Unknown error occurred";
+        }
+      } catch (e) {
+        errorMessage += error.message || "Could not connect to backend. Please ensure the backend server is running.";
+      }
+      
+      // Set error in state for display
+      setPredictionResult({
+        error: true,
+        message: errorMessage
+      });
     } finally {
       setAnalysisLoading(false);
     }
@@ -682,45 +807,127 @@ export default function HandwritingGame() {
 
       </div>
       {/* ===================== JSON ANALYSIS SECTION ===================== */}
-<div className="mt-8 rounded-2xl bg-black/30 p-6 ring-1 ring-white/10">
-  <h2 className="text-lg font-bold text-white mb-3">
-    Upload Handwriting JSON for Analysis
-  </h2>
+      <div className="mt-8 rounded-2xl bg-black/30 p-6 ring-1 ring-white/10">
+        <h2 className="text-lg font-bold text-white mb-4">
+          Upload Handwriting JSON for Analysis
+        </h2>
 
-  <input
-    type="file"
-    accept=".json"
-    onChange={handleJSONUpload}
-    className="mb-3 text-sm"
-  />
+        <div className="mb-4">
+          <input
+            type="file"
+            accept=".json"
+            onChange={handleJSONUpload}
+            className="block w-full text-sm text-slate-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer"
+          />
+          {uploadedJSON && (
+            <p className="mt-2 text-xs text-emerald-200">
+              ✓ File loaded successfully
+            </p>
+          )}
+        </div>
 
-  <div className="flex flex-wrap gap-3 mb-4">
-    <input
-      type="number"
-      value={analysisAge}
-      onChange={(e) => setAnalysisAge(Number(e.target.value))}
-      className="rounded px-3 py-2 text-black"
-      placeholder="Age"
-    />
+        <div className="flex flex-wrap gap-3 mb-4">
+          <div>
+            <label className="block text-xs text-slate-300 mb-1">Age</label>
+            <input
+              type="number"
+              value={analysisAge}
+              onChange={(e) => setAnalysisAge(Number(e.target.value))}
+              className="rounded-lg px-3 py-2 text-black bg-white w-24"
+              min="1"
+              max="18"
+              placeholder="Age"
+            />
+          </div>
 
-    <select
-      value={analysisGender}
-      onChange={(e) => setAnalysisGender(e.target.value)}
-      className="rounded px-3 py-2 text-black"
-    >
-      <option value="male">Male</option>
-      <option value="female">Female</option>
-    </select>
-  </div>
+          <div>
+            <label className="block text-xs text-slate-300 mb-1">Gender</label>
+            <select
+              value={analysisGender}
+              onChange={(e) => setAnalysisGender(e.target.value)}
+              className="rounded-lg px-3 py-2 text-black bg-white"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+        </div>
 
-  <button
-    onClick={analyzeUploadedJSON}
-    disabled={!uploadedJSON || analysisLoading}
-    className="rounded bg-emerald-600 px-4 py-2 font-bold text-white disabled:opacity-50"
-  >
-    {analysisLoading ? "Analyzing..." : "Analyze"}
-  </button>
-</div>
+        <button
+          onClick={analyzeUploadedJSON}
+          disabled={!uploadedJSON || analysisLoading}
+          className="rounded-lg bg-emerald-600 px-6 py-3 font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-500 transition"
+        >
+          {analysisLoading ? "Analyzing..." : "Analyze & Predict"}
+        </button>
+
+        {predictionResult && (
+          <div className={`mt-6 rounded-xl p-5 ring-1 ${
+            predictionResult.error 
+              ? "bg-red-900/30 ring-red-500/30" 
+              : "bg-slate-900/60 ring-white/10"
+          }`}>
+            {predictionResult.error ? (
+              <>
+                <h3 className="text-md font-bold text-red-400 mb-3">Error</h3>
+                <div className="space-y-2">
+                  <p className="text-sm text-red-200 whitespace-pre-line">
+                    {predictionResult.message}
+                  </p>
+                  <div className="mt-4 p-3 rounded-lg bg-black/30 text-xs text-slate-300">
+                    <p className="font-semibold mb-2">Troubleshooting:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Ensure the backend server is running on http://localhost:8000</li>
+                      <li>Check if the JSON file has valid stroke data</li>
+                      <li>Verify the file format matches the expected structure</li>
+                      <li>Check browser console for more details</li>
+                    </ul>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-md font-bold text-white mb-3">Prediction Results</h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-xs text-slate-300">Prediction: </span>
+                    <span className={`text-lg font-bold ${
+                      predictionResult.prediction === "ADHD" 
+                        ? "text-red-400" 
+                        : "text-emerald-400"
+                    }`}>
+                      {predictionResult.prediction}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-300">Probability: </span>
+                    <span className="text-lg font-semibold text-white">
+                      {(predictionResult.probability * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-300">Risk Level: </span>
+                    <span className={`text-lg font-semibold ${
+                      predictionResult.risk_level === "High" 
+                        ? "text-red-400" 
+                        : predictionResult.risk_level === "Moderate"
+                        ? "text-yellow-400"
+                        : "text-green-400"
+                    }`}>
+                      {predictionResult.risk_level}
+                    </span>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-white/10">
+                    <p className="text-xs text-slate-400">
+                      Note: This is a prediction based on handwriting analysis and should not be used as a medical diagnosis.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
     </div>
   );
