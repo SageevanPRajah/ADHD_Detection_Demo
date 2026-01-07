@@ -179,11 +179,3 @@ It **does not replace professional medical diagnosis** and must be used alongsid
 
 ---
 
-## ✅ PP1 – Checklist 1 Compliance
-
-- ✔ Shared Git repository
-- ✔ Clear commit history and contributions
-- ✔ README.md with required sections
-- ✔ Architecture diagram included
-- ✔ Technology stack documented
-- ✔ All component proposals uploaded
