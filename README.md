@@ -8,7 +8,7 @@ This project presents an **AI-driven, multimodal ADHD screening and attention en
 
 The system integrates **speech analysis**, **handwriting assessment**, **body posture & hyperactivity tracking**, and **eye-tracking–based visual attention analysis** to provide an **objective, scalable, and non-invasive ADHD screening solution**.
 
-> ⚠️ **Important Note**  
+> **Important Note**  
 > This is a **SCREENING system**, **not a diagnostic tool**.  
 > Results must be interpreted by qualified healthcare professionals.
 
@@ -57,9 +57,8 @@ The system follows a **modular, service-oriented architecture**, where each comp
 6. **Attention-improvement games** are suggested
 
 📌 **Architecture Diagram**  
-Refer to:  
 
----
+
 
 ## 🧩 Core System Components
 
@@ -172,10 +171,4 @@ Refer to:
 
 ---
 
-## ⚠️ Disclaimer
-
-This system is developed **for research and screening purposes only**.  
-It **does not replace professional medical diagnosis** and must be used alongside clinical evaluation.
-
----
 
