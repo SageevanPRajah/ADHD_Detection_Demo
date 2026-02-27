@@ -8,8 +8,7 @@ import AdminPanel from "./pages/AdminPanel.jsx";
 import SaimanInstructions from "./pages/Body Posture Tracking Game/SaimanInstructions.jsx";
 import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.jsx";
 import Result from "./pages/Body Posture Tracking Game/result.jsx";
-
-import Eyetrack from "./pages/eyetrack/Eyetrack.jsx";
+import HandwritingGame from "./pages/Handwriting/HandwritingGame.jsx";
 
 function App() {
   return (
@@ -19,13 +18,10 @@ function App() {
       <Route path="/parent" element={<ParentPanel />} />
       <Route path="/guest" element={<GuestPanel />} />
       <Route path="/admin" element={<AdminPanel />} />
-      
       <Route path="/saiman-game" element={<SaimanSaysGame />} />
       <Route path="/saiman-instructions" element={<SaimanInstructions />} />
       <Route path="/saiman-result" element={<Result />} />
-
-      <Route path="/eyetrack" element={<Eyetrack />} />
-
+      <Route path="/guest/handwriting" element={<HandwritingGame />} />
     </Routes>
   );
 }
