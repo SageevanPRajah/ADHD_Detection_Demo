@@ -12,7 +12,7 @@ import {
   PauseCircle,
   Eye
 } from "lucide-react";
-import { predictFromJSON } from "../handwriting util/api.js";
+import { predictFromJSON } from "../../handwriting util/api.js";
 
 /* ===================== DATA ===================== */
 
@@ -101,7 +101,7 @@ export default function HandwritingGame() {
     [selectedGrade]
   );
 
-    /* ===================== JSON UPLOAD + PREDICTION STATES ===================== */
+  /* ===================== JSON UPLOAD + PREDICTION STATES ===================== */
 
   const [uploadedJSON, setUploadedJSON] = useState(null);
   const [predictionResult, setPredictionResult] = useState(null);
@@ -114,7 +114,7 @@ export default function HandwritingGame() {
   // minimal helpers and UI state derived values
   const progressPct = activities.length ? Math.round(((currentIndex + 1) / activities.length) * 100) : 0;
 
-    /* ===================== JSON UPLOAD ===================== */
+  /* ===================== JSON UPLOAD ===================== */
 
   // Transform frontend JSON format to backend expected format
   const transformToBackendFormat = (data) => {
@@ -129,14 +129,14 @@ export default function HandwritingGame() {
     }
 
     const strokes = data.strokes;
-    
+
     // Group strokes by start/move sequences
     const strokeGroups = [];
     let currentStroke = null;
-    
+
     for (let i = 0; i < strokes.length; i++) {
       const point = strokes[i];
-      
+
       if (point.type === "start") {
         // Save previous stroke if exists
         if (currentStroke && currentStroke.keyPoints.length > 1) {
@@ -151,7 +151,7 @@ export default function HandwritingGame() {
         currentStroke.keyPoints.push({ x: point.x, y: point.y, timestamp: point.timestamp });
       }
     }
-    
+
     // Add last stroke if exists
     if (currentStroke && currentStroke.keyPoints.length > 1) {
       strokeGroups.push(currentStroke);
@@ -161,7 +161,7 @@ export default function HandwritingGame() {
     const drawingData = strokeGroups.map(stroke => {
       const keyPoints = stroke.keyPoints;
       const duration = (keyPoints[keyPoints.length - 1].timestamp - keyPoints[0].timestamp) / 1000; // in seconds
-      
+
       // Calculate stroke length
       let totalLength = 0;
       for (let i = 1; i < keyPoints.length; i++) {
@@ -169,10 +169,10 @@ export default function HandwritingGame() {
         const dy = keyPoints[i].y - keyPoints[i - 1].y;
         totalLength += Math.sqrt(dx * dx + dy * dy);
       }
-      
+
       // Calculate average pressure (using penSize from data or default)
       const avgPressure = data.penSize || 8;
-      
+
       return {
         strokeLength: totalLength,
         duration: duration || 0.001, // avoid division by zero
@@ -187,20 +187,20 @@ export default function HandwritingGame() {
     const firstTimestamp = strokes[0]?.timestamp || 0;
     const lastTimestamp = strokes[strokes.length - 1]?.timestamp || firstTimestamp;
     const activityDuration = Math.max(0.1, (lastTimestamp - firstTimestamp) / 1000); // in seconds, minimum 0.1s
-    
+
     const avgStrokeLength = drawingData.length > 0
       ? drawingData.reduce((sum, s) => sum + s.strokeLength, 0) / drawingData.length
       : 0;
-    
+
     const completionSpeed = avgStrokeLength / activityDuration;
-    
+
     // Estimate pause count (gaps between strokes > 200ms)
     let pauseCount = 0;
     for (let i = 0; i < strokeGroups.length - 1; i++) {
       const gap = (strokeGroups[i + 1].startTime - strokeGroups[i].keyPoints[strokeGroups[i].keyPoints.length - 1].timestamp) / 1000;
       if (gap > 0.2) pauseCount++;
     }
-    
+
     const pressures = drawingData.map(s => s.averagePressure);
     const pressureVariation = pressures.length > 0
       ? Math.max(...pressures) - Math.min(...pressures)
@@ -238,7 +238,7 @@ export default function HandwritingGame() {
     };
     reader.readAsText(file);
   };
-  
+
   const analyzeUploadedJSON = async () => {
     if (!uploadedJSON) return;
 
@@ -248,13 +248,13 @@ export default function HandwritingGame() {
     try {
       // Transform frontend format to backend format
       const transformedData = transformToBackendFormat(uploadedJSON);
-      
+
       // Use the API utility function
       const result = await predictFromJSON(transformedData, analysisAge, analysisGender);
       setPredictionResult(result);
     } catch (error) {
       console.error("Analysis error:", error);
-      
+
       // Parse error message from backend if available
       let errorMessage = "Error analyzing file: ";
       try {
@@ -273,7 +273,7 @@ export default function HandwritingGame() {
       } catch (e) {
         errorMessage += error.message || "Could not connect to backend. Please ensure the backend server is running.";
       }
-      
+
       // Set error in state for display
       setPredictionResult({
         error: true,
@@ -862,11 +862,10 @@ export default function HandwritingGame() {
         </button>
 
         {predictionResult && (
-          <div className={`mt-6 rounded-xl p-5 ring-1 ${
-            predictionResult.error 
-              ? "bg-red-900/30 ring-red-500/30" 
+          <div className={`mt-6 rounded-xl p-5 ring-1 ${predictionResult.error
+              ? "bg-red-900/30 ring-red-500/30"
               : "bg-slate-900/60 ring-white/10"
-          }`}>
+            }`}>
             {predictionResult.error ? (
               <>
                 <h3 className="text-md font-bold text-red-400 mb-3">Error</h3>
@@ -891,11 +890,10 @@ export default function HandwritingGame() {
                 <div className="space-y-3">
                   <div>
                     <span className="text-xs text-slate-300">Prediction: </span>
-                    <span className={`text-lg font-bold ${
-                      predictionResult.prediction === "ADHD" 
-                        ? "text-red-400" 
+                    <span className={`text-lg font-bold ${predictionResult.prediction === "ADHD"
+                        ? "text-red-400"
                         : "text-emerald-400"
-                    }`}>
+                      }`}>
                       {predictionResult.prediction}
                     </span>
                   </div>
@@ -907,13 +905,12 @@ export default function HandwritingGame() {
                   </div>
                   <div>
                     <span className="text-xs text-slate-300">Risk Level: </span>
-                    <span className={`text-lg font-semibold ${
-                      predictionResult.risk_level === "High" 
-                        ? "text-red-400" 
+                    <span className={`text-lg font-semibold ${predictionResult.risk_level === "High"
+                        ? "text-red-400"
                         : predictionResult.risk_level === "Moderate"
-                        ? "text-yellow-400"
-                        : "text-green-400"
-                    }`}>
+                          ? "text-yellow-400"
+                          : "text-green-400"
+                      }`}>
                       {predictionResult.risk_level}
                     </span>
                   </div>
