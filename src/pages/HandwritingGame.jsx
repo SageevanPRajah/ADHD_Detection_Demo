@@ -12,6 +12,9 @@ import {
   PauseCircle,
   Eye
 } from "lucide-react";
+import { predictFromJSON } from "../handwriting util/api.js";
+
+/* ===================== DATA ===================== */
 
 const activitySets = {
   kindergarten: [
@@ -62,17 +65,19 @@ const activitySets = {
 };
 
 const gradeMeta = [
-  { key: "kindergarten", label: "Kindergarten", emoji: "", hint: "Letters", ring: "ring-pink-400/30", bg: "from-pink-500/20 to-rose-500/10" },
-  { key: "grade1", label: "Grade 1", emoji: "", hint: "Easy words", ring: "ring-sky-400/30", bg: "from-sky-500/20 to-blue-500/10" },
-  { key: "grade2", label: "Grade 2", emoji: "", hint: "Common words", ring: "ring-emerald-400/30", bg: "from-emerald-500/20 to-teal-500/10" },
-  { key: "grade3", label: "Grade 3", emoji: "", hint: "Long words", ring: "ring-amber-400/30", bg: "from-amber-500/20 to-orange-500/10" },
-  { key: "grade4", label: "Grade 4", emoji: "", hint: "Hard words", ring: "ring-violet-400/30", bg: "from-violet-500/20 to-purple-500/10" },
-  { key: "grade5", label: "Grade 5+", emoji: "", hint: "Phrases", ring: "ring-fuchsia-400/30", bg: "from-fuchsia-500/20 to-pink-500/10" }
+  { key: "kindergarten", label: "Kindergarten", hint: "Letters", ring: "ring-pink-400/30", bg: "from-pink-500/20 to-rose-500/10" },
+  { key: "grade1", label: "Grade 1", hint: "Easy words", ring: "ring-sky-400/30", bg: "from-sky-500/20 to-blue-500/10" },
+  { key: "grade2", label: "Grade 2", hint: "Common words", ring: "ring-emerald-400/30", bg: "from-emerald-500/20 to-teal-500/10" },
+  { key: "grade3", label: "Grade 3", hint: "Long words", ring: "ring-amber-400/30", bg: "from-amber-500/20 to-orange-500/10" },
+  { key: "grade4", label: "Grade 4", hint: "Hard words", ring: "ring-violet-400/30", bg: "from-violet-500/20 to-purple-500/10" },
+  { key: "grade5", label: "Grade 5+", hint: "Phrases", ring: "ring-fuchsia-400/30", bg: "from-fuchsia-500/20 to-pink-500/10" }
 ];
 
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
 }
+
+/* ===================== COMPONENT ===================== */
 
 export default function HandwritingGame() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -80,95 +85,223 @@ export default function HandwritingGame() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
-
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
-
-  // ADHD-friendly toggles
   const [showGuide, setShowGuide] = useState(true);
   const [penSize, setPenSize] = useState(8);
   const [breakLeft, setBreakLeft] = useState(0);
 
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
+  const strokeDataRef = useRef([]); // ✅ NEW
+  const pointerIdRef = useRef(null);
 
-  const activities = useMemo(() => {
-    if (!selectedGrade) return [];
-    return activitySets[selectedGrade] || [];
-  }, [selectedGrade]);
+  const activities = useMemo(
+    () => (selectedGrade ? activitySets[selectedGrade] || [] : []),
+    [selectedGrade]
+  );
+
+    /* ===================== JSON UPLOAD + PREDICTION STATES ===================== */
+
+  const [uploadedJSON, setUploadedJSON] = useState(null);
+  const [predictionResult, setPredictionResult] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisAge, setAnalysisAge] = useState(6);
+  const [analysisGender, setAnalysisGender] = useState("male");
 
   const currentActivity = activities[currentIndex];
 
-  // Responsive canvas size (fits phone/tablet)
-  const resizeCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  // minimal helpers and UI state derived values
+  const progressPct = activities.length ? Math.round(((currentIndex + 1) / activities.length) * 100) : 0;
 
-    const parent = canvas.parentElement;
-    if (!parent) return;
+    /* ===================== JSON UPLOAD ===================== */
 
-    const rect = parent.getBoundingClientRect();
-    const w = Math.floor(rect.width);
-    const h = Math.floor(clamp(rect.width * 0.55, 260, 420));
+  // Transform frontend JSON format to backend expected format
+  const transformToBackendFormat = (data) => {
+    // If already in backend format, return as is
+    if (data && data.performanceMetrics && data.drawingData) {
+      return data;
+    }
 
+    // Otherwise, transform from frontend format
+    if (!data || !data.strokes || data.strokes.length === 0) {
+      throw new Error("Invalid JSON format: missing strokes data");
+    }
 
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
+    const strokes = data.strokes;
+    
+    // Group strokes by start/move sequences
+    const strokeGroups = [];
+    let currentStroke = null;
+    
+    for (let i = 0; i < strokes.length; i++) {
+      const point = strokes[i];
+      
+      if (point.type === "start") {
+        // Save previous stroke if exists
+        if (currentStroke && currentStroke.keyPoints.length > 1) {
+          strokeGroups.push(currentStroke);
+        }
+        // Start new stroke
+        currentStroke = {
+          keyPoints: [{ x: point.x, y: point.y, timestamp: point.timestamp }],
+          startTime: point.timestamp
+        };
+      } else if (point.type === "move" && currentStroke) {
+        currentStroke.keyPoints.push({ x: point.x, y: point.y, timestamp: point.timestamp });
+      }
+    }
+    
+    // Add last stroke if exists
+    if (currentStroke && currentStroke.keyPoints.length > 1) {
+      strokeGroups.push(currentStroke);
+    }
 
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#2563eb";
-    ctx.lineWidth = penSize;
-    ctxRef.current = ctx;
+    // Calculate metrics for each stroke
+    const drawingData = strokeGroups.map(stroke => {
+      const keyPoints = stroke.keyPoints;
+      const duration = (keyPoints[keyPoints.length - 1].timestamp - keyPoints[0].timestamp) / 1000; // in seconds
+      
+      // Calculate stroke length
+      let totalLength = 0;
+      for (let i = 1; i < keyPoints.length; i++) {
+        const dx = keyPoints[i].x - keyPoints[i - 1].x;
+        const dy = keyPoints[i].y - keyPoints[i - 1].y;
+        totalLength += Math.sqrt(dx * dx + dy * dy);
+      }
+      
+      // Calculate average pressure (using penSize from data or default)
+      const avgPressure = data.penSize || 8;
+      
+      return {
+        strokeLength: totalLength,
+        duration: duration || 0.001, // avoid division by zero
+        averagePressure: avgPressure,
+        keyPoints: keyPoints
+      };
+    });
 
-    // redraw guide after resize
-    drawGuide();
+    // Calculate overall performance metrics
+    const totalStrokes = drawingData.length;
+    const dataPoints = strokes.length;
+    const firstTimestamp = strokes[0]?.timestamp || 0;
+    const lastTimestamp = strokes[strokes.length - 1]?.timestamp || firstTimestamp;
+    const activityDuration = Math.max(0.1, (lastTimestamp - firstTimestamp) / 1000); // in seconds, minimum 0.1s
+    
+    const avgStrokeLength = drawingData.length > 0
+      ? drawingData.reduce((sum, s) => sum + s.strokeLength, 0) / drawingData.length
+      : 0;
+    
+    const completionSpeed = avgStrokeLength / activityDuration;
+    
+    // Estimate pause count (gaps between strokes > 200ms)
+    let pauseCount = 0;
+    for (let i = 0; i < strokeGroups.length - 1; i++) {
+      const gap = (strokeGroups[i + 1].startTime - strokeGroups[i].keyPoints[strokeGroups[i].keyPoints.length - 1].timestamp) / 1000;
+      if (gap > 0.2) pauseCount++;
+    }
+    
+    const pressures = drawingData.map(s => s.averagePressure);
+    const pressureVariation = pressures.length > 0
+      ? Math.max(...pressures) - Math.min(...pressures)
+      : 0;
+
+    const performanceMetrics = {
+      totalStrokes,
+      dataPoints,
+      activityDuration,
+      averageStrokeLength: avgStrokeLength,
+      completionSpeed,
+      pauseCount,
+      pressureVariation
+    };
+
+    return {
+      performanceMetrics,
+      drawingData
+    };
   };
 
-  useEffect(() => {
-    if (!gameStarted) return;
-    resizeCanvas();
-    const onResize = () => resizeCanvas();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameStarted]);
+  const handleJSONUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  // Update pen width when changed
-  useEffect(() => {
-    if (ctxRef.current) ctxRef.current.lineWidth = penSize;
-  }, [penSize]);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        setUploadedJSON(parsed);
+        setPredictionResult(null);
+      } catch (err) {
+        alert("Invalid JSON file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  
+  const analyzeUploadedJSON = async () => {
+    if (!uploadedJSON) return;
 
-  // Break timer (30s)
-  useEffect(() => {
-    if (breakLeft <= 0) return;
-    const t = setInterval(() => setBreakLeft((s) => s - 1), 1000);
-    return () => clearInterval(t);
-  }, [breakLeft]);
+    setAnalysisLoading(true);
+    setPredictionResult(null);
 
-  useEffect(() => {
-    if (!gameStarted) return;
-    // when activity changes, clear and guide
-    clearCanvas(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, showGuide, gameStarted]);
+    try {
+      // Transform frontend format to backend format
+      const transformedData = transformToBackendFormat(uploadedJSON);
+      
+      // Use the API utility function
+      const result = await predictFromJSON(transformedData, analysisAge, analysisGender);
+      setPredictionResult(result);
+    } catch (error) {
+      console.error("Analysis error:", error);
+      
+      // Parse error message from backend if available
+      let errorMessage = "Error analyzing file: ";
+      try {
+        if (error.message) {
+          const errorText = error.message;
+          // Try to parse JSON error if it's a JSON response
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage += errorJson.error || errorText;
+          } catch {
+            errorMessage += errorText;
+          }
+        } else {
+          errorMessage += "Unknown error occurred";
+        }
+      } catch (e) {
+        errorMessage += error.message || "Could not connect to backend. Please ensure the backend server is running.";
+      }
+      
+      // Set error in state for display
+      setPredictionResult({
+        error: true,
+        message: errorMessage
+      });
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
 
-  const startGame = (grade) => {
-    setSelectedGrade(grade);
-    setGameStarted(true);
+  const startGame = (gradeKey) => {
+    setSelectedGrade(gradeKey);
     setCurrentIndex(0);
     setScore(0);
     setTotalAttempts(0);
-    setHasDrawn(false);
+    setGameStarted(true);
     setShowGuide(true);
-    setPenSize(8);
     setBreakLeft(0);
-    setTimeout(() => resizeCanvas(), 0);
+    setHasDrawn(false);
+    // clear and draw guide after rendering
+    setTimeout(() => clearCanvas(true), 50);
+  };
+
+  const handleWrong = () => {
+    // simple fallback: clear strokes and advance
+    strokeDataRef.current = [];
+    setTotalAttempts((t) => t + 1);
+    if (currentIndex < activities.length - 1) setCurrentIndex((i) => i + 1);
   };
 
   const goHome = () => {
@@ -177,137 +310,239 @@ export default function HandwritingGame() {
     setCurrentIndex(0);
     setScore(0);
     setTotalAttempts(0);
-    setHasDrawn(false);
-    setBreakLeft(0);
+    clearCanvas();
   };
+
+  const drawGuide = () => {
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    if (!canvas || !ctx || !currentActivity) return;
+    try {
+      ctx.save();
+      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = '#000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const fontSize = Math.max(48, Math.min(120, canvas.width / (6 * (window.devicePixelRatio || 1))));
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillText(currentActivity.content, canvas.width / (2 * (window.devicePixelRatio || 1)), canvas.height / (2 * (window.devicePixelRatio || 1)));
+      ctx.restore();
+    } catch (e) {
+      // ignore drawing guide errors
+    }
+  };
+
+  // initialize canvas and context when game starts (canvas is rendered)
+  useEffect(() => {
+    if (!gameStarted) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      // ensure canvas uses full container width
+      canvas.style.width = '100%';
+      const displayWidth = canvas.offsetWidth || 600;
+      const displayHeight = 300;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = displayWidth * ratio;
+      canvas.height = displayHeight * ratio;
+      canvas.style.height = `${displayHeight}px`;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0); // reset and scale
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = penSize;
+      ctxRef.current = ctx;
+      clearCanvas(true);
+      drawGuide();
+    };
+
+    resizeCanvas();
+    const ro = new ResizeObserver(resizeCanvas);
+    ro.observe(canvas);
+    window.addEventListener('orientationchange', resizeCanvas);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('orientationchange', resizeCanvas);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameStarted]);
+
+  // attach native listeners to ensure pointer/touch events are captured (passive:false)
+  useEffect(() => {
+    if (!gameStarted) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onDown = (ev) => startDrawing(ev);
+    const onMove = (ev) => draw(ev);
+    const onUp = (ev) => stopDrawing(ev);
+
+    canvas.addEventListener('pointerdown', onDown, { passive: false });
+    canvas.addEventListener('pointermove', onMove, { passive: false });
+    canvas.addEventListener('pointerup', onUp, { passive: false });
+    canvas.addEventListener('pointercancel', onUp, { passive: false });
+    canvas.addEventListener('pointerleave', onUp, { passive: false });
+
+    // touch fallbacks
+    canvas.addEventListener('touchstart', onDown, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    canvas.addEventListener('touchend', onUp, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('pointerleave', onUp);
+
+      canvas.removeEventListener('touchstart', onDown);
+      canvas.removeEventListener('touchmove', onMove);
+      canvas.removeEventListener('touchend', onUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameStarted]);
+
+  // update pen size on context
+  useEffect(() => {
+    if (ctxRef.current) ctxRef.current.lineWidth = penSize;
+  }, [penSize]);
+
+  // break countdown
+  useEffect(() => {
+    if (breakLeft <= 0) return;
+    const t = setInterval(() => setBreakLeft((b) => Math.max(0, b - 1)), 1000);
+    return () => clearInterval(t);
+  }, [breakLeft]);
+
+  /* ===================== CANVAS ===================== */
 
   const clearCanvas = (keepGuide = false) => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
     if (!canvas || !ctx) return;
 
-    // Clear in CSS pixels
-    const w = canvas.getBoundingClientRect().width;
-    const h = canvas.getBoundingClientRect().height;
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    strokeDataRef.current = []; // ✅ RESET STROKES
     setHasDrawn(false);
 
-    if (!keepGuide) return;
-    drawGuide();
+    if (keepGuide) drawGuide();
   };
 
-  const drawGuide = () => {
-    const ctx = ctxRef.current;
+  const getEventPos = (e) => {
     const canvas = canvasRef.current;
-    if (!ctx || !canvas || !currentActivity) return;
-
-    const w = canvas.getBoundingClientRect().width;
-    const h = canvas.getBoundingClientRect().height;
-
-    // guide background
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, w, h);
-
-    // soft grid lines
-    ctx.globalAlpha = 0.06;
-    ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 1;
-    const gap = 24;
-    for (let x = gap; x < w; x += gap) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
-    }
-    for (let y = gap; y < h; y += gap) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-
-    // faint target content (tracing hint)
-    if (showGuide) {
-      ctx.globalAlpha = 0.16;
-      ctx.fillStyle = "#0f172a";
-      const text = currentActivity.content;
-      const fontSize = clamp(Math.floor(w * 0.18), 42, 96);
-      ctx.font = `700 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, w / 2, h / 2);
-    }
-
-    ctx.restore();
-
-    // reset drawing style
-    ctx.strokeStyle = "#2563eb";
-    ctx.lineWidth = penSize;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const ev = e.nativeEvent || e;
+    const touch = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
   };
+
+  const startDrawing = (e) => {
+    if (breakLeft > 0) return;
+    e.preventDefault();
+
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+
+    const pos = getEventPos(e);
+    console.log('startDrawing', { pos });
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    // draw a small dot so the user sees immediate feedback
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, Math.max(1, penSize / 2), 0, Math.PI * 2);
+    ctx.fill();
+
+    strokeDataRef.current.push({
+      type: "start",
+      x: pos.x,
+      y: pos.y,
+      timestamp: Date.now()
+    });
+
+    setIsDrawing(true);
+    setHasDrawn(true);
+    // store pointer id for capture release
+    const ev = e.nativeEvent || e;
+    if (ev.pointerId && canvasRef.current && canvasRef.current.setPointerCapture) {
+      pointerIdRef.current = ev.pointerId;
+      try { canvasRef.current.setPointerCapture(ev.pointerId); } catch (err) { /* ignore */ }
+    }
+  };
+
+  const draw = (e) => {
+    if (!isDrawing || breakLeft > 0) return;
+    // don't block scrolling unless needed
+    e.preventDefault && e.preventDefault();
+
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+
+    const pos = getEventPos(e);
+    console.log('draw', { pos });
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+
+    strokeDataRef.current.push({
+      type: "move",
+      x: pos.x,
+      y: pos.y,
+      timestamp: Date.now()
+    });
+  };
+
+  const stopDrawing = (e) => {
+    console.log('stopDrawing');
+    // release pointer capture if any
+    const id = pointerIdRef.current;
+    if (id && canvasRef.current && canvasRef.current.releasePointerCapture) {
+      try { canvasRef.current.releasePointerCapture(id); } catch (err) { /* ignore */ }
+      pointerIdRef.current = null;
+    }
+    setIsDrawing(false);
+  };
+
+  /* ===================== SAVE JSON ===================== */
 
   const handleCorrect = () => {
+    const sessionJSON = {
+      grade: selectedGrade,
+      activity: currentActivity.content,
+      instruction: currentActivity.instruction,
+      penSize,
+      timestamp: new Date().toISOString(),
+      strokes: strokeDataRef.current
+    };
+
+    const blob = new Blob([JSON.stringify(sessionJSON, null, 2)], {
+      type: "application/json"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `handwriting_${selectedGrade}_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    strokeDataRef.current = [];
+
     setScore((s) => s + 1);
     setTotalAttempts((t) => t + 1);
 
     if (currentIndex < activities.length - 1) {
       setCurrentIndex((i) => i + 1);
     } else {
-      alert(`Awesome! You finished all ${activities.length}.\nStars: ${score + 1} / ${totalAttempts + 1}`);
-      goHome();
+      alert(`Awesome! You finished all ${activities.length}.`);
+      setGameStarted(false);
     }
   };
 
-  const handleWrong = () => {
-    setTotalAttempts((t) => t + 1);
-    clearCanvas(true);
-  };
+  /* ===================== UI (UNCHANGED) ===================== */
 
-  const getEventPos = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const point = e.touches ? e.touches[0] : e;
-
-    return {
-      x: point.clientX - rect.left,
-      y: point.clientY - rect.top
-    };
-  };
-
-  const startDrawing = (e) => {
-    if (breakLeft > 0) return;
-    e.preventDefault();
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-
-    setIsDrawing(true);
-    setHasDrawn(true);
-
-    const pos = getEventPos(e);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing || breakLeft > 0) return;
-    e.preventDefault();
-
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-
-    const pos = getEventPos(e);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-  };
-
-  const stopDrawing = () => setIsDrawing(false);
-
-  const progressPct = activities.length ? Math.round(((currentIndex + 1) / activities.length) * 100) : 0;
-
-  // -------------------- HOME / GRADE PICKER --------------------
   if (!gameStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#1e3a7a] via-[#3d5aa8] to-[#4a6cb8] text-white relative overflow-hidden p-4 md:p-8">
@@ -516,13 +751,15 @@ export default function HandwritingGame() {
               <div className="rounded-2xl bg-white p-2">
                 <canvas
                   ref={canvasRef}
+                  onPointerDown={startDrawing}
+                  onPointerMove={draw}
+                  onPointerUp={stopDrawing}
+                  onPointerCancel={stopDrawing}
+                  onPointerLeave={stopDrawing}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onTouchEnd={stopDrawing}
+                  style={{ touchAction: 'none', userSelect: 'none' }}
                   className={`block w-full rounded-xl bg-white ${breakLeft > 0 ? "opacity-70" : ""}`}
                 />
               </div>
@@ -567,7 +804,132 @@ export default function HandwritingGame() {
         <p className="mt-4 text-center text-xs text-slate-400">
           Keep sessions short and positive.
         </p>
+
       </div>
+      {/* ===================== JSON ANALYSIS SECTION ===================== */}
+      <div className="mt-8 rounded-2xl bg-black/30 p-6 ring-1 ring-white/10">
+        <h2 className="text-lg font-bold text-white mb-4">
+          Upload Handwriting JSON for Analysis
+        </h2>
+
+        <div className="mb-4">
+          <input
+            type="file"
+            accept=".json"
+            onChange={handleJSONUpload}
+            className="block w-full text-sm text-slate-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer"
+          />
+          {uploadedJSON && (
+            <p className="mt-2 text-xs text-emerald-200">
+              ✓ File loaded successfully
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-4">
+          <div>
+            <label className="block text-xs text-slate-300 mb-1">Age</label>
+            <input
+              type="number"
+              value={analysisAge}
+              onChange={(e) => setAnalysisAge(Number(e.target.value))}
+              className="rounded-lg px-3 py-2 text-black bg-white w-24"
+              min="1"
+              max="18"
+              placeholder="Age"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-slate-300 mb-1">Gender</label>
+            <select
+              value={analysisGender}
+              onChange={(e) => setAnalysisGender(e.target.value)}
+              className="rounded-lg px-3 py-2 text-black bg-white"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          onClick={analyzeUploadedJSON}
+          disabled={!uploadedJSON || analysisLoading}
+          className="rounded-lg bg-emerald-600 px-6 py-3 font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-500 transition"
+        >
+          {analysisLoading ? "Analyzing..." : "Analyze & Predict"}
+        </button>
+
+        {predictionResult && (
+          <div className={`mt-6 rounded-xl p-5 ring-1 ${
+            predictionResult.error 
+              ? "bg-red-900/30 ring-red-500/30" 
+              : "bg-slate-900/60 ring-white/10"
+          }`}>
+            {predictionResult.error ? (
+              <>
+                <h3 className="text-md font-bold text-red-400 mb-3">Error</h3>
+                <div className="space-y-2">
+                  <p className="text-sm text-red-200 whitespace-pre-line">
+                    {predictionResult.message}
+                  </p>
+                  <div className="mt-4 p-3 rounded-lg bg-black/30 text-xs text-slate-300">
+                    <p className="font-semibold mb-2">Troubleshooting:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Ensure the backend server is running on http://localhost:8000</li>
+                      <li>Check if the JSON file has valid stroke data</li>
+                      <li>Verify the file format matches the expected structure</li>
+                      <li>Check browser console for more details</li>
+                    </ul>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-md font-bold text-white mb-3">Prediction Results</h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-xs text-slate-300">Prediction: </span>
+                    <span className={`text-lg font-bold ${
+                      predictionResult.prediction === "ADHD" 
+                        ? "text-red-400" 
+                        : "text-emerald-400"
+                    }`}>
+                      {predictionResult.prediction}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-300">Probability: </span>
+                    <span className="text-lg font-semibold text-white">
+                      {(predictionResult.probability * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-300">Risk Level: </span>
+                    <span className={`text-lg font-semibold ${
+                      predictionResult.risk_level === "High" 
+                        ? "text-red-400" 
+                        : predictionResult.risk_level === "Moderate"
+                        ? "text-yellow-400"
+                        : "text-green-400"
+                    }`}>
+                      {predictionResult.risk_level}
+                    </span>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-white/10">
+                    <p className="text-xs text-slate-400">
+                      Note: This is a prediction based on handwriting analysis and should not be used as a medical diagnosis.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
     </div>
   );
-}
+
+}  
