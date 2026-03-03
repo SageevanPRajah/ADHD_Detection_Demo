@@ -73,13 +73,14 @@ export default function SaimanSaysGame() {
     setAdhdResult(null);
 
     try {
+      const token = localStorage.getItem("token");
       const result = await sendAdhdVideo(uploadedVideo, {
         childId: "demo001",
         age: 8,
         group: "Unknown",
         gender: "M",
         rounds: roundCount,
-      });
+      }, token);
 
       setApiStatus("idle");
 
@@ -177,13 +178,14 @@ export default function SaimanSaysGame() {
     setAdhdResult(null);
 
     try {
+      const token = localStorage.getItem("token");
       const result = await sendAdhdVideo(videoToAnalyze, {
         childId: "demo001",
         age: 8,
         group: "Unknown",
         gender: "M",
         rounds: roundCount,
-      });
+      }, token);
 
       setApiStatus("idle");
 
@@ -319,11 +321,10 @@ export default function SaimanSaysGame() {
             <button
               onClick={startSession}
               disabled={running}
-              className={`px-12 py-4 text-xl font-black rounded-2xl transition ${
-                running
+              className={`px-12 py-4 text-xl font-black rounded-2xl transition ${running
                   ? "bg-gray-500"
                   : "bg-green-400 hover:bg-green-300 text-black"
-              }`}
+                }`}
             >
               Start Game
             </button>
@@ -331,9 +332,8 @@ export default function SaimanSaysGame() {
             <button
               onClick={endSession}
               disabled={!running}
-              className={`px-12 py-4 text-xl font-black rounded-2xl transition ${
-                running ? "bg-red-500 hover:bg-red-400" : "bg-gray-500"
-              }`}
+              className={`px-12 py-4 text-xl font-black rounded-2xl transition ${running ? "bg-red-500 hover:bg-red-400" : "bg-gray-500"
+                }`}
             >
               Stop
             </button>
@@ -343,11 +343,10 @@ export default function SaimanSaysGame() {
         <button
           onClick={() => navigate("/saiman-result")}
           disabled={!adhdResult}
-          className={`w-full py-4 mt-10 rounded-2xl transition ${
-            adhdResult
+          className={`w-full py-4 mt-10 rounded-2xl transition ${adhdResult
               ? "bg-white/20 hover:bg-white/30"
               : "bg-white/10 opacity-50 cursor-not-allowed"
-          }`}
+            }`}
         >
           View Result Page
         </button>
@@ -395,13 +394,12 @@ export default function SaimanSaysGame() {
           <button
             disabled={!uploadedVideo || apiStatus === "loading"}
             onClick={analyzeUploadedVideo}
-            className={`w-full mt-4 py-3 rounded-xl font-bold transition ${
-              !uploadedVideo
+            className={`w-full mt-4 py-3 rounded-xl font-bold transition ${!uploadedVideo
                 ? "bg-gray-500 cursor-not-allowed"
                 : apiStatus === "loading"
-                ? "bg-yellow-400 text-black"
-                : "bg-green-400 hover:bg-green-300 text-black"
-            }`}
+                  ? "bg-yellow-400 text-black"
+                  : "bg-green-400 hover:bg-green-300 text-black"
+              }`}
           >
             {apiStatus === "loading" ? "Analyzing video..." : "Analyze Video"}
           </button>

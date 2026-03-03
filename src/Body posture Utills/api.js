@@ -24,7 +24,7 @@ export async function sendAdhdSession(features, meta) {
 }
 
 // ✅ NEW: video upload endpoint
-export async function sendAdhdVideo(fileOrBlob, meta) {
+export async function sendAdhdVideo(fileOrBlob, meta, token = null) {
   try {
     const form = new FormData();
 
@@ -41,9 +41,15 @@ export async function sendAdhdVideo(fileOrBlob, meta) {
     form.append("rounds", String(meta.rounds ?? 0));
     form.append("gender", meta.gender || "M");
 
+    const headers = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${API_BASE}/predict`, {
       method: "POST",
       body: form,
+      headers: headers,
     });
 
     if (!res.ok) {
