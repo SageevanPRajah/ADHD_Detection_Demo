@@ -1,6 +1,7 @@
+// Simple ADHD model API helper
+// Falls back to localhost if VITE_API_BASE is not set.
 const API_BASE = import.meta.env?.VITE_API_BASE || "http://localhost:8000";
 
-// OLD JSON endpoint (keep if you want)
 export async function sendAdhdSession(features, meta) {
   try {
     const res = await fetch(`${API_BASE}/predict`, {
@@ -11,10 +12,10 @@ export async function sendAdhdSession(features, meta) {
         age: meta.age,
         group: meta.group,
         rounds: meta.rounds,
-        gender: meta.gender || "M",
         features,
       }),
     });
+
     if (!res.ok) throw new Error(`API error ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -23,45 +24,38 @@ export async function sendAdhdSession(features, meta) {
   }
 }
 
-// ✅ NEW: video upload endpoint
-export async function sendAdhdVideo(fileOrBlob, meta, token = null) {
+/**
+ * Sends a video file to the /predict-test endpoint (no auth or DB required).
+ * This allows testing the model directly.
+ */
+export async function sendAdhdVideoTest(videoBlob, rounds) {
   try {
-    const form = new FormData();
+    console.log("sendAdhdVideoTest: sending video blob, size:", videoBlob?.size, "rounds:", rounds);
+    const formData = new FormData();
+    formData.append("video", videoBlob, "recording.webm");
+    formData.append("rounds", rounds);
 
-    // if blob, wrap as File
-    let file = fileOrBlob;
-    if (fileOrBlob instanceof Blob && !(fileOrBlob instanceof File)) {
-      file = new File([fileOrBlob], "recording.webm", { type: "video/webm" });
-    }
-
-    form.append("video", file);
-    form.append("child_id", meta.childId || "demo_001");
-    form.append("age", String(meta.age ?? 8));
-    form.append("group", meta.group || "Unknown");
-    form.append("rounds", String(meta.rounds ?? 0));
-    form.append("gender", meta.gender || "M");
-
-    const headers = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`${API_BASE}/predict`, {
+    const res = await fetch(`${API_BASE}/predict-test`, {
       method: "POST",
-      body: form,
-      headers: headers,
+      body: formData,
     });
 
+    console.log("sendAdhdVideoTest: response status:", res.status);
+
     if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`API ${res.status}: ${txt}`);
+      const errorText = await res.text();
+      console.error("Predict-test failed:", errorText);
+      throw new Error(`API error ${res.status}`);
     }
 
-    return await res.json();
+    const data = await res.json();
+    console.log("sendAdhdVideoTest: parsed response:", JSON.stringify(data));
+    return data;
   } catch (err) {
-    console.error("sendAdhdVideo failed:", err);
+    console.error("sendAdhdVideoTest failed:", err);
     return null;
   }
 }
 
+// Back-compat alias for older imports
 export const sendToADHDModel = sendAdhdSession;
