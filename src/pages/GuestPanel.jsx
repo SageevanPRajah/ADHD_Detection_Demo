@@ -25,7 +25,7 @@ const games = [
     description:
       "Read fun phrases aloud while the system listens for pace and impulsive speech.",
     icon: Mic,
-    route: "/guest/voice-tracking"
+    route: "/speech/"
   },
   {
     id: "handwriting",
