@@ -9,7 +9,7 @@ const games = [
     label: "Eye Tracking Game",
     description: "Follow moving targets to measure focus, saccades and gaze shifts.",
     icon: Eye,
-    route: "/guest/eye-tracking"
+    route: "/eyetrack"
   },
   {
     id: "body",
@@ -17,7 +17,7 @@ const games = [
     description:
       "Mirror simple poses to observe restlessness, fidgeting and posture changes.",
     icon: Activity,
-    route: "/guest/body-posture"
+    route: "/saiman-instructions"
   },
   {
     id: "voice",
@@ -64,7 +64,7 @@ const GuestPanel = () => {
     <Dashboard roleLabel="Guest Demo View">
       <div className="mt-4 space-y-4">
         {/* intro */}
-        <section className="rounded-2xl bg-clinic-surfaceDark p-4 shadow-xl shadow-black/40">
+        <section className="p-4 shadow-xl rounded-2xl bg-clinic-surfaceDark shadow-black/40">
           <h2 className="text-sm font-semibold text-clinic-accent">
             Important Disclaimer
           </h2>
@@ -76,7 +76,7 @@ const GuestPanel = () => {
         </section>
 
         {/* game cards */}
-        <section className="space-y-3 rounded-2xl bg-clinic-surfaceDark p-4 shadow-xl shadow-black/40">
+        <section className="p-4 space-y-3 shadow-xl rounded-2xl bg-clinic-surfaceDark shadow-black/40">
           <h3 className="text-xs font-semibold text-slate-200">
             Try the game-based screening analysis
           </h3>
@@ -85,7 +85,7 @@ const GuestPanel = () => {
             a single trial.
           </p>
 
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 mt-3 md:grid-cols-2">
             {games.map((game) => {
               const Icon = game.icon;
               const isDone = played[game.id];
@@ -95,9 +95,9 @@ const GuestPanel = () => {
                   key={game.id}
                   className="flex flex-col rounded-3xl bg-gradient-to-br from-lime-400 via-clinic-secondary to-clinic-primary p-[1px] shadow-lg shadow-black/40"
                 >
-                  <div className="flex flex-1 flex-col rounded-3xl bg-black/80 px-4 py-5 text-center">
-                    <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/60">
-                      <Icon className="h-5 w-5 text-white" />
+                  <div className="flex flex-col flex-1 px-4 py-5 text-center rounded-3xl bg-black/80">
+                    <div className="flex items-center justify-center mx-auto rounded-full h-9 w-9 bg-black/60">
+                      <Icon className="w-5 h-5 text-white" />
                     </div>
                     <h4 className="mt-3 text-sm font-semibold text-white">
                       {game.label}
@@ -125,7 +125,7 @@ const GuestPanel = () => {
         </section>
 
         {/* trial summary + send mail */}
-        <section className="rounded-2xl bg-clinic-surfaceDark p-4 shadow-xl shadow-black/40">
+        <section className="p-4 shadow-xl rounded-2xl bg-clinic-surfaceDark shadow-black/40">
           <h3 className="text-xs font-semibold text-slate-200">
             Game trial summary
           </h3>
@@ -139,7 +139,7 @@ const GuestPanel = () => {
             {games.map((game) => (
               <div
                 key={game.id}
-                className="flex items-center justify-between rounded-xl border border-slate-700/80 bg-black/30 px-3 py-2"
+                className="flex items-center justify-between px-3 py-2 border rounded-xl border-slate-700/80 bg-black/30"
               >
                 <span className="text-slate-200">{game.label}</span>
                 <span
@@ -155,7 +155,7 @@ const GuestPanel = () => {
             ))}
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 mt-4">
             <p className="text-[11px] text-slate-400">
               Status:{" "}
               {allCompleted ? (
@@ -179,7 +179,7 @@ const GuestPanel = () => {
                   : "cursor-not-allowed bg-slate-800 text-slate-500"
               }`}
             >
-              <Mail className="h-3 w-3" />
+              <Mail className="w-3 h-3" />
               Send results to email
             </button>
           </div>
