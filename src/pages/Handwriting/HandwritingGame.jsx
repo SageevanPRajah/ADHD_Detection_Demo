@@ -90,6 +90,9 @@ export default function HandwritingGame() {
   const [showGuide, setShowGuide] = useState(true);
   const [penSize, setPenSize] = useState(8);
   const [breakLeft, setBreakLeft] = useState(0);
+  const [showResultScreen, setShowResultScreen] = useState(false);
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [currentPrediction, setCurrentPrediction] = useState(null);
 
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -507,7 +510,7 @@ export default function HandwritingGame() {
 
   /* ===================== SAVE JSON ===================== */
 
-  const handleCorrect = () => {
+  const handleCorrect = async () => {
     const sessionJSON = {
       grade: selectedGrade,
       activity: currentActivity.content,
@@ -517,27 +520,48 @@ export default function HandwritingGame() {
       strokes: strokeDataRef.current
     };
 
-    const blob = new Blob([JSON.stringify(sessionJSON, null, 2)], {
-      type: "application/json"
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `handwriting_${selectedGrade}_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
     strokeDataRef.current = [];
+    setHasDrawn(false);
+
+    setIsPredicting(true);
+    setShowResultScreen(true);
+
+    try {
+      const response = await fetch("http://localhost:8000/handwriting/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(sessionJSON)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCurrentPrediction(data);
+    } catch (err) {
+      setCurrentPrediction({ error: true, message: err.message });
+    } finally {
+      setIsPredicting(false);
+    }
+  };
+
+  const handleBackToGame = () => {
+    setShowResultScreen(false);
+    setCurrentPrediction(null);
+    clearCanvas(true);
 
     setScore((s) => s + 1);
     setTotalAttempts((t) => t + 1);
 
     if (currentIndex < activities.length - 1) {
       setCurrentIndex((i) => i + 1);
+      setTimeout(() => clearCanvas(true), 50);
     } else {
       alert(`Awesome! You finished all ${activities.length}.`);
-      setGameStarted(false);
+      goHome();
     }
   };
 
@@ -631,6 +655,68 @@ export default function HandwritingGame() {
           <p className="mt-4 text-center text-xs text-slate-400">
             This is a supportive activity, not a diagnosis tool.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showResultScreen) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#1e3a7a] via-[#3d5aa8] to-[#4a6cb8] text-white relative overflow-hidden p-4 md:p-8 flex items-center justify-center">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/40 text-center">
+          {isPredicting ? (
+            <div className="flex flex-col items-center gap-5 my-8">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-w-2 border-t-amber-400 border-r-transparent border-b-sky-400 border-l-transparent"></div>
+              <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-400">Result Pending...</h2>
+              <p className="text-base text-slate-300">Analyzing your handwriting patterns ✍️✨</p>
+            </div>
+          ) : currentPrediction?.error ? (
+            <div className="flex flex-col items-center gap-5 my-4">
+              <XCircle className="h-20 w-20 text-rose-500 max-w-md" />
+              <h2 className="text-3xl font-extrabold text-rose-400">Oops!</h2>
+              <p className="text-base text-slate-300">{currentPrediction.message}</p>
+              <button onClick={handleBackToGame} className="mt-6 w-full rounded-2xl bg-slate-800 px-6 py-4 font-bold text-white hover:bg-slate-700 transition ring-1 ring-white/10 flex items-center justify-center gap-3">
+                <ArrowRight className="h-5 w-5 rotate-180" /> Back to Game
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-5 my-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-emerald-400 blur-xl opacity-20 rounded-full"></div>
+                <CheckCircle className="h-20 w-20 text-emerald-400 relative z-10" />
+              </div>
+              <h2 className="text-3xl font-extrabold text-emerald-300">Analysis Complete!</h2>
+
+              <div className="w-full rounded-2xl bg-black/25 p-6 mt-2 ring-1 ring-white/10 text-left space-y-4">
+                <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                  <div className="text-sm text-slate-400 font-semibold">Prediction</div>
+                  <div className={`text-xl font-bold ${currentPrediction?.prediction === 'ADHD' || currentPrediction?.prediction === 'ADHD Risk' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {currentPrediction?.prediction || 'Unknown'}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                  <div className="text-sm text-slate-400 font-semibold">Probability</div>
+                  <div className="text-xl font-bold text-white">
+                    {currentPrediction?.probability ? (currentPrediction.probability * 100).toFixed(1) : '0'}%
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-slate-400 font-semibold">Risk Level</div>
+                  <div className={`text-xl font-bold ${currentPrediction?.risk_level === 'High' ? 'text-rose-400' :
+                      currentPrediction?.risk_level === 'Moderate' ? 'text-amber-400' : 'text-emerald-400'
+                    }`}>
+                    {currentPrediction?.risk_level || 'Unknown'}
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={handleBackToGame} className="mt-4 w-full flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-900/40">
+                Continue Game <ArrowRight className="h-5 w-5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -863,8 +949,8 @@ export default function HandwritingGame() {
 
         {predictionResult && (
           <div className={`mt-6 rounded-xl p-5 ring-1 ${predictionResult.error
-              ? "bg-red-900/30 ring-red-500/30"
-              : "bg-slate-900/60 ring-white/10"
+            ? "bg-red-900/30 ring-red-500/30"
+            : "bg-slate-900/60 ring-white/10"
             }`}>
             {predictionResult.error ? (
               <>
@@ -891,8 +977,8 @@ export default function HandwritingGame() {
                   <div>
                     <span className="text-xs text-slate-300">Prediction: </span>
                     <span className={`text-lg font-bold ${predictionResult.prediction === "ADHD"
-                        ? "text-red-400"
-                        : "text-emerald-400"
+                      ? "text-red-400"
+                      : "text-emerald-400"
                       }`}>
                       {predictionResult.prediction}
                     </span>
@@ -906,10 +992,10 @@ export default function HandwritingGame() {
                   <div>
                     <span className="text-xs text-slate-300">Risk Level: </span>
                     <span className={`text-lg font-semibold ${predictionResult.risk_level === "High"
-                        ? "text-red-400"
-                        : predictionResult.risk_level === "Moderate"
-                          ? "text-yellow-400"
-                          : "text-green-400"
+                      ? "text-red-400"
+                      : predictionResult.risk_level === "Moderate"
+                        ? "text-yellow-400"
+                        : "text-green-400"
                       }`}>
                       {predictionResult.risk_level}
                     </span>
