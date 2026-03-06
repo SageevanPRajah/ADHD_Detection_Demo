@@ -7,7 +7,8 @@ export default {
         clinic: {
           primary: "#2563EB", // blue 600
           secondary: "#06B6D4", // cyan 500
-          accent: "#22C55E", // green 500
+
+          accent: "#22C55E",    // green 500
           bgDark: "#0e1b4d",     // FROM
           bgMid: "#1b3a8f",      // VIA
           bgLight: "#274690",

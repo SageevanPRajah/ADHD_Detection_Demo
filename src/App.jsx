@@ -7,6 +7,9 @@ import GuestPanel from "./pages/GuestPanel.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import SaimanInstructions from "./pages/Body Posture Tracking Game/SaimanInstructions.jsx";
 import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.jsx";
+import Result from "./pages/Body Posture Tracking Game/result.jsx";
+import HandwritingGame from "./pages/Handwriting/HandwritingGame.jsx";
+import SpeechRouter from "./modules/Speech/speechRouter";
 import SaimanResult from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 
 function App() {
@@ -19,9 +22,9 @@ function App() {
       <Route path="/admin" element={<AdminPanel />} />
       <Route path="/saiman-game" element={<SaimanSaysGame />} />
       <Route path="/saiman-instructions" element={<SaimanInstructions />} />
-      <Route path="/saiman-result" element={<SaimanResult />} />
-
-
+      <Route path="/saiman-result" element={<Result />} />
+      <Route path="/guest/handwriting" element={<HandwritingGame />} />
+      <Route path="/speech/*" element={<SpeechRouter />} />
     </Routes>
   );
 }

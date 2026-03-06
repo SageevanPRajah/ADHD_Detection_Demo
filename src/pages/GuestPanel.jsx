@@ -9,7 +9,7 @@ const games = [
     label: "Eye Tracking Game",
     description: "Follow moving targets to measure focus, saccades and gaze shifts.",
     icon: Eye,
-    route: "/guest/eye-tracking"
+    route: "/eyetrack"
   },
   {
     id: "body",
@@ -25,7 +25,7 @@ const games = [
     description:
       "Read fun phrases aloud while the system listens for pace and impulsive speech.",
     icon: Mic,
-    route: "/guest/voice-tracking"
+    route: "/speech/"
   },
   {
     id: "handwriting",
