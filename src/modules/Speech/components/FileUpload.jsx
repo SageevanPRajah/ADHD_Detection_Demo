@@ -169,7 +169,7 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
     sessionStorage.setItem('pendingChildAge', childAge.toString());
     
     // Navigate to results page immediately to show loading
-    navigate('/results');
+    navigate('/speech/results');
     
     // Start analysis immediately (continues even after navigation)
     // Don't store file in sessionStorage - use it directly
@@ -212,7 +212,7 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
       sessionStorage.removeItem('isAnalyzing');
       
       // Navigate to results page with result
-      navigate('/results', { state: { result }, replace: true });
+      navigate('/speech/results', { state: { result }, replace: true });
       onAnalysisComplete(result);
 
     } catch (error) {
@@ -221,7 +221,7 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
       sessionStorage.setItem('analysisError', error.message || 'Failed to analyze audio. Please try again.');
       onError(error.message || 'Failed to analyze audio. Please try again.');
       // Navigate back to analyze page on error
-      navigate('/analyze', { replace: true });
+      navigate('/speech/analyze', { replace: true });
     } finally {
       onLoading(false);
     }
