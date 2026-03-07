@@ -38,9 +38,7 @@ export default function SaimanResult() {
           <p className="mt-2 text-6xl font-black">
             {result.adhd_score} / 10
           </p>
-          <p className={`text-2xl font-bold mt-3 ${riskColor}`}>
-            {result.subtype}
-          </p>
+         
         </div>
 
         {/* META */}
@@ -53,7 +51,7 @@ export default function SaimanResult() {
 
         {/* DERIVED FEATURES */}
         <h3 className="mb-4 text-xl font-bold">
-          🔍 Model Derived Features
+           Model Derived Features
         </h3>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -93,7 +91,7 @@ export default function SaimanResult() {
       {/* FOOTER */}
       <div className="flex justify-center mt-10">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/saiman-game")}
           className="px-8 py-3 rounded-xl bg-white/20 hover:bg-white/30"
         >
           Back to Home

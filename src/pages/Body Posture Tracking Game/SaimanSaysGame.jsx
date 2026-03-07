@@ -184,7 +184,7 @@ export default function SaimanSaysGame() {
       <header className="flex items-center justify-between px-10 py-6">
         <h1 className="text-4xl font-extrabold">🦸 Saiman Says</h1>
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/saiman-instructions")}
           className="px-5 py-2 bg-white/20 rounded-xl"
         >
           Exit
