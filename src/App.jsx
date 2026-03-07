@@ -7,13 +7,17 @@ import GuestPanel from "./pages/GuestPanel.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import SaimanInstructions from "./pages/Body Posture Tracking Game/SaimanInstructions.jsx";
 import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.jsx";
-import Result from "./pages/Body Posture Tracking Game/result.jsx";
+import Result from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
+import HandwritingGame from "./pages/Handwriting/HandwritingGame.jsx";
+import SpeechRouter from "./modules/Speech/speechRouter";
+import SaimanResult from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 
 import Eyetrack from "./pages/eyetrack/Eyetrack.jsx";
 import EyeTrackTerms from "./pages/eyetrack/EyeTrackTerms.jsx";
 import EyeTrackIntro from "./pages/eyetrack/EyeTrackIntro.jsx";
 import ChildEyeGame from "./pages/eyetrack/game/ChildEyeGame.jsx"; 
 import Eyecollect from "./pages/eyetrack/game/Eyecollect.jsx"; 
+
 
 function App() {
   return (
@@ -23,10 +27,11 @@ function App() {
       <Route path="/parent" element={<ParentPanel />} />
       <Route path="/guest" element={<GuestPanel />} />
       <Route path="/admin" element={<AdminPanel />} />
-      
       <Route path="/saiman-game" element={<SaimanSaysGame />} />
       <Route path="/saiman-instructions" element={<SaimanInstructions />} />
       <Route path="/saiman-result" element={<Result />} />
+      <Route path="/guest/handwriting" element={<HandwritingGame />} />
+      <Route path="/speech/*" element={<SpeechRouter />} />
 
       <Route path="/eyetrack" element={<Eyetrack />} />
       <Route path="/eyetrack/terms" element={<EyeTrackTerms />} />
