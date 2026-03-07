@@ -9,7 +9,7 @@ const games = [
     label: "Eye Tracking Game",
     description: "Follow moving targets to measure focus, saccades and gaze shifts.",
     icon: Eye,
-    route: "/eyetrack"
+    route: "/eyetrack/terms"
   },
   {
     id: "body",
