@@ -4,20 +4,9 @@ import { ArrowLeft } from "lucide-react";
 
 const EyeTrackTerms = () => {
   const navigate = useNavigate();
-  const [selectedAge, setSelectedAge] = React.useState(
-    localStorage.getItem("eyetrackAgeGroup") || null
-  );
-
-  const ageGroups = ["5–7", "8–10"];
-
-  const handleAgeSelect = (age) => {
-    setSelectedAge(age);
-  };
 
   const handleContinue = () => {
-    if (!selectedAge) return;
-    localStorage.setItem("eyetrackAgeGroup", selectedAge);
-    navigate("/eyetrack/intro");
+    navigate("/eyetrack/child-game");
   };
 
   const handleBack = () => {
@@ -57,81 +46,28 @@ const EyeTrackTerms = () => {
             <p className="text-sm font-semibold text-clinic-accent">
               ⚠️ Parent/Guardian Guidance Required
             </p>
-            <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">
               A parent or guardian must supervise this assessment. Please read
-              the rules below carefully before your child begins.
+              the rule below carefully before your child begins.
             </p>
           </div>
 
           {/* Rules */}
           <div className="mt-6 space-y-4">
             <h2 className="text-sm font-semibold text-slate-200">
-              Important Rules
+              Important Rule
             </h2>
 
             <div className="rounded-xl border border-slate-700/80 bg-black/20 p-4">
               <div className="flex gap-3">
-                <div className="flex-shrink-0 text-clinic-primary font-bold text-lg">
+                <div className="flex-shrink-0 text-lg font-bold text-clinic-primary">
                   1
                 </div>
-                <p className="text-sm text-slate-300 leading-relaxed">
+                <p className="text-sm leading-relaxed text-slate-300">
                   If parents are near the child, they must hide their eyes; only
                   the child's eyes should be visible to the camera.
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Age group selection */}
-          <div className="mt-8 space-y-4">
-            <h2 className="text-sm font-semibold text-slate-200">
-              Select Child's Age Group <span className="text-clinic-accent">*</span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              This helps us customize the game difficulty and provide appropriate
-              guidance.
-            </p>
-
-            <div className="space-y-2">
-              {ageGroups.map((age) => (
-                <button
-                  key={age}
-                  type="button"
-                  onClick={() => handleAgeSelect(age)}
-                  className={`w-full rounded-xl border-2 p-4 text-left transition ${
-                    selectedAge === age
-                      ? "border-clinic-primary bg-clinic-primary/10"
-                      : "border-slate-700 bg-black/30 hover:border-slate-600"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-5 w-5 rounded border-2 transition ${
-                        selectedAge === age
-                          ? "border-clinic-primary bg-clinic-primary"
-                          : "border-slate-500 bg-transparent"
-                      }`}
-                    >
-                      {selectedAge === age && (
-                        <svg
-                          className="h-full w-full text-white p-0.5"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="text-sm font-medium text-slate-100">
-                      Age {age}
-                    </span>
-                  </div>
-                </button>
-              ))}
             </div>
           </div>
 
@@ -140,12 +76,7 @@ const EyeTrackTerms = () => {
             <button
               type="button"
               onClick={handleContinue}
-              disabled={!selectedAge}
-              className={`flex-1 rounded-full px-4 py-3 text-sm font-semibold transition ${
-                selectedAge
-                  ? "bg-clinic-primary text-slate-900 hover:bg-clinic-primary/90"
-                  : "cursor-not-allowed bg-slate-800 text-slate-500"
-              }`}
+              className="flex-1 rounded-full bg-clinic-primary px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-clinic-primary/90"
             >
               Continue
             </button>

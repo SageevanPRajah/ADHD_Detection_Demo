@@ -13,7 +13,7 @@ const EyeTrackIntro = () => {
 
   const handleStartGame = () => {
     localStorage.setItem("eyetrackAccepted", "true");
-    navigate("/eyetrack");
+    navigate("/eyetrack/child-game");
   };
 
   const handleBack = () => {
