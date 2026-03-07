@@ -523,13 +523,8 @@ export default function HandwritingGame() {
     strokeDataRef.current = [];
     setHasDrawn(false);
 
-
     setIsPredicting(true);
     setShowResultScreen(true);
-
-
-
-
 
     try {
       const response = await fetch("http://localhost:8000/handwriting/predict", {
