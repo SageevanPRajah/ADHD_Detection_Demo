@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 
 const AgeSelectionPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [selectedAge, setSelectedAge] = useState(null);
 
   const handleAgeSelect = (age) => {
     setSelectedAge(age);
-
-    // Navigate to speech reading task page
     navigate('/speech/reading', { state: { selectedAge: age } });
   };
 
@@ -22,31 +22,23 @@ const AgeSelectionPage = () => {
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
 
-            {/* Section Header */}
             <div className="text-center mb-12">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-400/30 rounded-full mb-4">
                 <span className="text-4xl">🎂</span>
               </div>
-
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-                Choose Your Age
-              </h2>
-
-              <p className="text-lg text-white/80">
-                Pick your age to start the reading adventure! 📚
-              </p>
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">{t('speech.chooseAge')}</h2>
+              <p className="text-lg text-white/80">{t('speech.chooseAgeDesc')}</p>
             </div>
 
-            {/* Age Selection Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
               {[
-                { age: 6, label: 'Age 6', description: 'Simple words', emoji: '🌟', color: 'from-yellow-400/30 to-orange-400/30' },
-                { age: 7, label: 'Age 7', description: 'Easy sentences', emoji: '⭐', color: 'from-blue-400/30 to-cyan-400/30' },
-                { age: 8, label: 'Age 8', description: 'Short stories', emoji: '✨', color: 'from-green-400/30 to-emerald-400/30' },
-                { age: 9, label: 'Age 9', description: 'Long stories', emoji: '🎯', color: 'from-purple-400/30 to-pink-400/30' },
-                { age: 10, label: 'Age 10', description: 'Complex texts', emoji: '🚀', color: 'from-red-400/30 to-pink-400/30' },
-                { age: 11, label: 'Age 11+', description: 'Advanced reading', emoji: '💫', color: 'from-indigo-400/30 to-purple-400/30' }
-              ].map(({ age, label, description, emoji, color }) => (
+                { age: 6, labelKey: 'speech.age6', descKey: 'speech.age6Desc', emoji: '🌟', color: 'from-yellow-400/30 to-orange-400/30' },
+                { age: 7, labelKey: 'speech.age7', descKey: 'speech.age7Desc', emoji: '⭐', color: 'from-blue-400/30 to-cyan-400/30' },
+                { age: 8, labelKey: 'speech.age8', descKey: 'speech.age8Desc', emoji: '✨', color: 'from-green-400/30 to-emerald-400/30' },
+                { age: 9, labelKey: 'speech.age9', descKey: 'speech.age9Desc', emoji: '🎯', color: 'from-purple-400/30 to-pink-400/30' },
+                { age: 10, labelKey: 'speech.age10', descKey: 'speech.age10Desc', emoji: '🚀', color: 'from-red-400/30 to-pink-400/30' },
+                { age: 11, labelKey: 'speech.age11', descKey: 'speech.age11Desc', emoji: '💫', color: 'from-indigo-400/30 to-purple-400/30' }
+              ].map(({ age, labelKey, descKey, emoji, color }) => (
                 <button
                   key={age}
                   onClick={() => handleAgeSelect(age)}
@@ -56,46 +48,21 @@ const AgeSelectionPage = () => {
                       : 'border-blue-500/30 hover:border-blue-400/50'
                   }`}
                 >
-
-                  <div className="absolute top-4 right-4 text-xl">
-                    {emoji}
-                  </div>
-
+                  <div className="absolute top-4 right-4 text-xl">{emoji}</div>
                   <div className="mt-2">
                     <div className="text-3xl mb-2">{emoji}</div>
-
-                    <h3 className="text-xl font-bold text-white mb-1">
-                      {label}
-                    </h3>
-
-                    <p className="text-sm text-white/80 mb-4">
-                      {description}
-                    </p>
-
+                    <h3 className="text-xl font-bold text-white mb-1">{t(labelKey)}</h3>
+                    <p className="text-sm text-white/80 mb-4">{t(descKey)}</p>
                     <div className="flex items-center text-white/90 font-semibold text-sm bg-white/10 rounded-full px-4 py-2">
-                      <span>Start</span>
-
-                      <svg
-                        className="w-4 h-4 ml-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
+                      <span>{t('speech.start')}</span>
+                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-
                     </div>
                   </div>
-
                 </button>
               ))}
             </div>
-
           </div>
         </div>
       </section>
