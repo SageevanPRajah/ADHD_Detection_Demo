@@ -17,7 +17,7 @@ export default function SaimanSaysInstructions() {
       {/* top bar */}
       <header className="relative z-10 flex items-center justify-between max-w-6xl px-6 py-6 mx-auto">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/guest")}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl bg-white/15 hover:bg-white/25"
         >
           <ArrowLeft className="w-4 h-4" />

@@ -7,9 +7,10 @@ import GuestPanel from "./pages/GuestPanel.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import SaimanInstructions from "./pages/Body Posture Tracking Game/SaimanInstructions.jsx";
 import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.jsx";
-import Result from "./pages/Body Posture Tracking Game/result.jsx";
+import Result from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 import HandwritingGame from "./pages/Handwriting/HandwritingGame.jsx";
 import SpeechRouter from "./modules/Speech/speechRouter";
+import SaimanResult from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 
 function App() {
   return (
