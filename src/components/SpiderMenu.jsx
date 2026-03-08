@@ -103,9 +103,8 @@ const SpiderMenu = () => {
             return (
               <div
                 key={leg.id}
-                className={`absolute ${leg.position} ${
-                  leg.id === "guest" ? "z-10" : "z-20"
-                }`}
+                className={`absolute ${leg.position} ${leg.id === "guest" ? "z-10" : "z-20"
+                  }`}
                 onMouseEnter={() => setActive(leg.id)}
                 onMouseLeave={() => setActive(null)}
               >
@@ -124,7 +123,7 @@ const SpiderMenu = () => {
                 {/* hover panel */}
                 {isActive && (
                   <div
-                    className={`absolute z-30 w-64 rounded-2xl border border-slate-700 bg-clinic-surfaceDark/95 p-4 text-xs shadow-2xl shadow-black/60 ${leg.panelPosition}`}
+                    className={`absolute z-30 w-72 rounded-3xl border border-white/10 bg-black/60 backdrop-blur-xl p-6 shadow-2xl shadow-black/80 animate-[fadeIn_0.2s_ease-out] ${leg.panelPosition}`}
                   >
                     <LoginPanel id={leg.id} onLogin={handleLogin} />
                   </div>
@@ -142,7 +141,7 @@ export default SpiderMenu;
 
 /* Shared field style */
 const fieldBase =
-  "w-full rounded-lg border border-slate-600 bg-slate-900/40 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-clinic-primary";
+  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-clinic-primary/50 focus:bg-white/10 transition-all";
 
 /* Split into sub-components so hooks are safe */
 
@@ -152,20 +151,20 @@ const DoctorLoginPanel = ({ onLogin }) => {
 
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold text-clinic-primary">
-        {t("spider.doctorAccess")}
+      <p className="mb-4 text-xs font-bold text-clinic-primary flex items-center gap-2">
+        <UserCog className="w-4 h-4" /> {t("spider.doctorAccess")}
       </p>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <input
           className={fieldBase}
           placeholder={t("spider.doctorIdPlaceholder")}
         />
         <input type="password" className={fieldBase} placeholder={t("spider.password")} />
         <button
-          className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-clinic-primary px-3 py-2 text-xs font-semibold text-white"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-clinic-primary px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-primary/20 hover:bg-white hover:text-clinic-primary transition-all"
           onClick={() => onLogin("doctor")}
         >
-          <LogIn className="h-3 w-3" /> {t("spider.login")}
+          <LogIn className="h-4 w-4" /> {t("spider.login")}
         </button>
       </div>
 
@@ -204,20 +203,20 @@ const ParentLoginPanel = ({ onLogin }) => {
   const { t } = useTranslation();
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold text-clinic-secondary">
-        {t("spider.parentAccess")}
+      <p className="mb-1 text-xs font-bold text-clinic-secondary flex items-center gap-2">
+        <User className="w-4 h-4" /> {t("spider.parentAccess")}
       </p>
-      <p className="mb-2 text-[10px] text-slate-400">
+      <p className="mb-4 text-[10px] text-slate-400">
         {t("spider.parentAccessDesc")}
       </p>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <input className={fieldBase} placeholder={t("spider.parentIdPlaceholder")} />
         <input type="password" className={fieldBase} placeholder={t("spider.password")} />
         <button
-          className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-clinic-secondary px-3 py-2 text-xs font-semibold text-slate-900"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-clinic-secondary px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-secondary/20 hover:bg-white hover:text-clinic-secondary transition-all"
           onClick={() => onLogin("parent")}
         >
-          <LogIn className="h-3 w-3" /> {t("spider.login")}
+          <LogIn className="h-4 w-4" /> {t("spider.login")}
         </button>
       </div>
     </div>
@@ -230,23 +229,23 @@ const GuestLoginPanel = ({ onLogin }) => {
 
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold text-clinic-accent">
-        {mode === "login" ? t("spider.guestLoginLabel") : t("spider.guestSignupLabel")}
+      <p className="mb-1 text-xs font-bold text-clinic-accent flex items-center gap-2">
+        <UserPlus className="w-4 h-4" /> {mode === "login" ? t("spider.guestLoginLabel") : t("spider.guestSignupLabel")}
       </p>
 
       {mode === "login" ? (
         <>
-          <p className="mb-2 text-[10px] text-slate-400">
+          <p className="mb-4 text-[10px] text-slate-400">
             {t("spider.guestDesc")}
           </p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <input className={fieldBase} placeholder={t("spider.email")} />
             <input type="password" className={fieldBase} placeholder={t("spider.password")} />
             <button
-              className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-clinic-accent px-3 py-2 text-xs font-semibold text-slate-900"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-clinic-accent px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-accent/20 hover:bg-white hover:text-clinic-accent transition-all"
               onClick={() => onLogin("guest")}
             >
-              <LogIn className="h-3 w-3" /> {t("spider.login")}
+              <LogIn className="h-4 w-4" /> {t("spider.login")}
             </button>
           </div>
           <button
@@ -258,7 +257,7 @@ const GuestLoginPanel = ({ onLogin }) => {
         </>
       ) : (
         <>
-          <div className="space-y-2">
+          <div className="space-y-3 mt-3">
             <input className={fieldBase} placeholder={t("spider.fullName")} />
             <input className={fieldBase} placeholder={t("spider.email")} />
             <input
@@ -266,10 +265,10 @@ const GuestLoginPanel = ({ onLogin }) => {
               className={fieldBase}
               placeholder={t("spider.createPassword")}
             />
-            <button className="flex w-full items-center justify-center gap-1 rounded-lg border border-slate-600 bg-slate-900/40 px-3 py-2 text-[11px] font-medium text-slate-100">
+            <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors px-4 py-2 text-[11px] font-bold text-white">
               <span className="text-lg">G</span> {t("spider.continueGoogle")}
             </button>
-            <button className="w-full rounded-lg bg-clinic-accent px-3 py-2 text-xs font-semibold text-slate-900">
+            <button className="w-full rounded-xl bg-clinic-accent px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-accent/20 hover:bg-white hover:text-clinic-accent transition-all mt-1">
               {t("spider.createGuestAccount")}
             </button>
           </div>
@@ -289,20 +288,20 @@ const AdminLoginPanel = ({ onLogin }) => {
   const { t } = useTranslation();
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold text-indigo-400">
-        {t("spider.adminAccess")}
+      <p className="mb-1 text-xs font-bold text-indigo-400 flex items-center gap-2">
+        <Shield className="w-4 h-4" /> {t("spider.adminAccess")}
       </p>
-      <p className="mb-2 text-[10px] text-slate-400">
+      <p className="mb-4 text-[10px] text-slate-400">
         {t("spider.adminDesc")}
       </p>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <input className={fieldBase} placeholder={t("spider.adminEmail")} />
         <input type="password" className={fieldBase} placeholder={t("spider.password")} />
         <button
-          className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-indigo-500 px-3 py-2 text-xs font-semibold text-white"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-white hover:text-indigo-600 transition-all"
           onClick={() => onLogin("admin")}
         >
-          <LogIn className="h-3 w-3" /> {t("spider.login")}
+          <LogIn className="h-4 w-4" /> {t("spider.login")}
         </button>
       </div>
     </div>
