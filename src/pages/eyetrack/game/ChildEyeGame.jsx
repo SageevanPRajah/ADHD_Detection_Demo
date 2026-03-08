@@ -1,7 +1,23 @@
 // File: src/pages/eyetrack/game/ChildEyeGame.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./eyecollect.css";
+
+const styles = `
+  .ceg-root .app { display: flex; height: 100vh; background: #0b1020; color: #eef2ff; }
+  .ceg-root .left { width: 360px; background: #0f1a33; border-right: 1px solid #193255; padding: 16px; box-sizing: border-box; overflow: auto; }
+  .ceg-root .right { position: relative; flex: 1; background: #0b132b; }
+  .ceg-root canvas#stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ceg-root .btn { display: block; width: 100%; margin: 8px 0; padding: 10px 12px; background: #22c55e; color: #fff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
+  .ceg-root .btn.secondary { background: #3b82f6; }
+  .ceg-root .btn.warn { background: #f97316; }
+  .ceg-root .btn.ghost { background: #334155; }
+  .ceg-root .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .ceg-root .pill { display: inline-block; background: #0b132b; border: 1px solid #1e2a46; border-radius: 999px; padding: 2px 8px; font-size: 12px; margin-left: 6px; }
+  .ceg-root .status { background: #0b132b; border: 1px solid #1e2a46; border-radius: 10px; padding: 10px; font-size: 13px; }
+  .ceg-root .toast { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #111827; border: 1px solid #2a3b5f; padding: 8px 12px; border-radius: 10px; color: #e5e7eb; z-index: 5; }
+  .ceg-root .taskbar { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 10px; }
+  .ceg-root .tag { background: #1e293b; border-radius: 8px; padding: 2px 8px; display: inline-block; margin: 2px 4px 0 0; font-size: 12px; }
+`;
 
 /**
  * ChildEyeGame.jsx
@@ -212,15 +228,15 @@ export default function ChildEyeGame() {
     setTimeout(() => o.stop(), ms);
   }
 
-  // ---------- Resize ----------
+  // ---------- Scroll Lock ----------
   useEffect(() => {
-    function fit() {
-      forceFitCanvas();
-    }
-    fit();
-    window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, []);
+
+  // ---------- Resize ----------
 
   // ---------- Camera recording ----------
   async function startCameraRecording() {
@@ -1088,7 +1104,9 @@ export default function ChildEyeGame() {
   const step = currentStep();
 
   return (
-    <div className="app">
+    <div className="ceg-root">
+      <style>{styles}</style>
+      <div className="app">
       <aside className="left">
         <h2 className="h">🧒 Child Eye Game (Under 8)</h2>
 
@@ -1298,6 +1316,7 @@ export default function ChildEyeGame() {
 
         {toastVisible && <div className="toast">{toastMsg}</div>}
       </main>
+      </div>
     </div>
   );
 }
