@@ -19,7 +19,7 @@ function makeLocalSessionId(participantId) {
 }
 
 export default function ChildEyeGame() {
-  const [meta, setMeta] = useState({ participantId: '', age: 8, condition: 'Unsure' });
+  const [meta, setMeta] = useState({ participantId: 'UID001', age: 8, condition: 'Unsure' });
   const [localSessionId, setLocalSessionId] = useState('');
   const [sessionStatus, setSessionStatus] = useState('idle');
   const [eyeEnabled, setEyeEnabled] = useState(true);
@@ -378,7 +378,7 @@ export default function ChildEyeGame() {
   return (
     <div className="page">
       <aside className="sidebar">
-        <Header title="🎮 ADHD Eye Tasks (Final)" />
+        <Header title="🎮 ADHD Eye Tasks" />
 
         <div className="card">
           <div style={{ fontWeight: 800, marginBottom: 8 }}>Participant</div>
@@ -439,13 +439,7 @@ export default function ChildEyeGame() {
           </div>
         </div>
 
-        <div className="card" style={{ marginTop: 10, fontSize: 12, opacity: .85 }}>
-          <div><strong>Flow</strong></div>
-          <div style={{ marginTop: 6 }}>
-            Frontend stores events, gaze, and calibration locally during play.
-            After Game 5 ends, everything is sent once to the backend for feature generation and model inference.
-          </div>
-        </div>
+        
 
         <div style={{ marginTop: 10 }}>
           {eyeEnabled && (
