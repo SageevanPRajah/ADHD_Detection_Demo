@@ -60,7 +60,7 @@ export default function Game2FruitCatching({ durationMs, onEvent, onDone }) {
             const src = isTarget ? target : nonRed[Math.floor(Math.random() * nonRed.length)];
             const id = `f_${Date.now()}_${Math.random().toString(16).slice(2)}`;
             activeFruit = { id, src, side, x: laneX[side], y: laneY, tOn: performance.now(), isTarget, caught: false };
-            activeUntil = performance.now() + 950;
+            activeUntil = performance.now() + 1200;
             onEventRef.current('target_on', { game: 2, trial_id: id, side, isTarget, x: activeFruit.x, y: activeFruit.y });
         };
         spawnFruit();
