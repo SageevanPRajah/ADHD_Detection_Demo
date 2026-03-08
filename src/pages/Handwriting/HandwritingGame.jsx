@@ -75,6 +75,7 @@ function clamp(n, a, b) {
 
 export default function HandwritingGame() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const gradeMeta = [
     { key: "kindergarten", label: t("hw.kindergarten"), hint: t("hw.hintLetters"), ring: "ring-pink-400/30", bg: "from-pink-500/20 to-rose-500/10" },
