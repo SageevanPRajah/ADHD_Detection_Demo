@@ -24,5 +24,38 @@ export async function sendAdhdSession(features, meta) {
   }
 }
 
+/**
+ * Sends a video file to the /predict-test endpoint (no auth or DB required).
+ * This allows testing the model directly.
+ */
+export async function sendAdhdVideoTest(videoBlob, rounds) {
+  try {
+    console.log("sendAdhdVideoTest: sending video blob, size:", videoBlob?.size, "rounds:", rounds);
+    const formData = new FormData();
+    formData.append("video", videoBlob, "recording.webm");
+    formData.append("rounds", rounds);
+
+    const res = await fetch(`${API_BASE}/predict-test`, {
+      method: "POST",
+      body: formData,
+    });
+
+    console.log("sendAdhdVideoTest: response status:", res.status);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Predict-test failed:", errorText);
+      throw new Error(`API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    console.log("sendAdhdVideoTest: parsed response:", JSON.stringify(data));
+    return data;
+  } catch (err) {
+    console.error("sendAdhdVideoTest failed:", err);
+    return null;
+  }
+}
+
 // Back-compat alias for older imports
 export const sendToADHDModel = sendAdhdSession;
