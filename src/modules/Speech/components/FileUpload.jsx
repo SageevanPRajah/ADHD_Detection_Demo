@@ -40,11 +40,30 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       chunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      // Best supported mimeTypes for recording
+      const mimeTypes = [
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/webm;codecs=opus',
+        'audio/webm'
+      ];
+
+      let selectedMimeType = '';
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
       mediaRecorder.ondataavailable = (event) => { if (event.data.size > 0) chunksRef.current.push(event.data); };
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const file = new File([blob], `recording_${Date.now()}.webm`, { type: 'audio/webm' });
+        const mime = mediaRecorder.mimeType || 'audio/webm';
+        const fileExtension = mime.includes('mp4') ? 'm4a' : mime.includes('mpeg') ? 'mp3' : 'webm';
+
+        const blob = new Blob(chunksRef.current, { type: mime });
+        const file = new File([blob], `recording_${Date.now()}.${fileExtension}`, { type: mime });
         setRecordedBlob(blob);
         setSelectedFile(file);
       };
@@ -108,10 +127,10 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
     }
     sessionStorage.setItem('isAnalyzing', 'true');
     sessionStorage.setItem('pendingChildAge', childAge.toString());
-    
+
     // Navigate to results page immediately to show loading
     navigate('/speech/results');
-    
+
     // Start analysis immediately (continues even after navigation)
     // Don't store file in sessionStorage - use it directly
     performAnalysis(fileToUpload);
@@ -122,7 +141,7 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
       const formData = new FormData();
       formData.append('file', fileToUpload);
       formData.append('child_age', childAge.toString());
-      const response = await fetch('http://localhost:8000/analyze', { method: 'POST', body: formData });
+      const response = await fetch('http://localhost:8003/analyze', { method: 'POST', body: formData });
       if (!response.ok) {
         const errorText = await response.text();
         let errorData;
@@ -132,7 +151,7 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
       const result = await response.json();
       sessionStorage.setItem('analysisResult', JSON.stringify(result));
       sessionStorage.removeItem('isAnalyzing');
-      
+
       // Navigate to results page with result
       navigate('/speech/results', { state: { result }, replace: true });
       onAnalysisComplete(result);
@@ -280,7 +299,7 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
                     <div className="mb-6">
                       <div className="text-3xl font-mono font-bold text-red-400 mb-2">{formatTime(recordingTime)}</div>
                       <div className="w-full bg-white/10 rounded-full h-2">
-                        <div className="bg-red-500 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                        <div className="bg-red-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                       </div>
                     </div>
                   )}

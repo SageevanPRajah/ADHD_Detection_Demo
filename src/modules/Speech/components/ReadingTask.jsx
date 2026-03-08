@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const ReadingTask = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Get age from location state or default to 8
   const initialAge = location.state?.selectedAge || 8;
   const [childAge, setChildAge] = useState(initialAge);
@@ -13,17 +13,17 @@ const ReadingTask = () => {
   const [selectedAge8Story, setSelectedAge8Story] = useState(null);
   const [selectedAge9Story, setSelectedAge9Story] = useState(null);
   const [selectedAge10Story, setSelectedAge10Story] = useState(null);
-  
+
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
-  
+
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
-  
+
   // Update age when location state changes
   useEffect(() => {
     if (location.state?.selectedAge) {
@@ -228,8 +228,24 @@ const ReadingTask = () => {
       streamRef.current = stream;
       chunksRef.current = [];
 
+      // Best supported mimeTypes for recording
+      const mimeTypes = [
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/webm;codecs=opus',
+        'audio/webm'
+      ];
+
+      let selectedMimeType = '';
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: selectedMimeType
       });
 
       mediaRecorder.ondataavailable = (event) => {
@@ -239,8 +255,11 @@ const ReadingTask = () => {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const file = new File([blob], `recording_${Date.now()}.webm`, { type: 'audio/webm' });
+        const mime = mediaRecorder.mimeType || 'audio/webm';
+        const fileExtension = mime.includes('mp4') ? 'm4a' : mime.includes('mpeg') ? 'mp3' : 'webm';
+
+        const blob = new Blob(chunksRef.current, { type: mime });
+        const file = new File([blob], `recording_${Date.now()}.${fileExtension}`, { type: mime });
         setSelectedFile(file);
         // Don't reset recordingTime here - preserve it to show the duration
       };
@@ -267,7 +286,7 @@ const ReadingTask = () => {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      
+
       mediaRecorderRef.current.stop();
       setIsRecording(false);
 
@@ -304,11 +323,12 @@ const ReadingTask = () => {
     // Clear any previous results
     sessionStorage.removeItem('analysisResult');
     sessionStorage.removeItem('analysisError');
-    
+
     // Navigate to results page immediately to show loading
     // Using setTimeout to ensure sessionStorage is written before navigation
     setTimeout(() => {
-      navigate('/results', { replace: false });
+      // Use replace: false to allow going back
+      navigate('/speech/results', { replace: false });
       // Start analysis after navigation
       performAnalysis(fileToUpload);
     }, 0);
@@ -320,7 +340,7 @@ const ReadingTask = () => {
       formData.append('file', fileToUpload);
       formData.append('child_age', childAge.toString());
 
-      const response = await fetch('http://localhost:8000/analyze', {
+      const response = await fetch('http://localhost:8003/analyze', {
         method: 'POST',
         body: formData,
       });
@@ -337,20 +357,21 @@ const ReadingTask = () => {
       }
 
       const result = await response.json();
-      
+
       // Store result and clear loading flag
       sessionStorage.setItem('analysisResult', JSON.stringify(result));
       sessionStorage.removeItem('isAnalyzing');
-      
-      // Navigate to results page with result
-      navigate('/results', { state: { result }, replace: true });
+
+      // On success, navigate to results page with full result data
+      navigate('/speech/results', { state: { result }, replace: true });
 
     } catch (error) {
       console.error('Analysis error:', error);
       sessionStorage.removeItem('isAnalyzing');
       sessionStorage.setItem('analysisError', error.message || 'Failed to analyze audio. Please try again.');
       alert(error.message || 'Failed to analyze audio. Please try again.');
-      navigate('/reading-task', { replace: true });
+      // After alert, just stop analyzing but stay on page
+      // navigate('/speech/reading', { replace: true }); 
     }
   };
 
@@ -367,19 +388,19 @@ const ReadingTask = () => {
     if (age === 6) {
       return selectedAge6Story || age6Stories[0];
     }
-    
+
     if (age === 7) {
       return selectedAge7Story || age7Stories[0];
     }
-    
+
     if (age === 8) {
       return selectedAge8Story || age8Stories[0];
     }
-    
+
     if (age === 9) {
       return selectedAge9Story || age9Stories[0];
     }
-    
+
     if (age === 10) {
       return selectedAge10Story || age10Stories[0];
     }
@@ -430,20 +451,20 @@ const ReadingTask = () => {
             <p className="text-lg text-white/80">
               Read the fun story below and record your voice! 🎤
             </p>
-            </div>
+          </div>
 
-            {/* Instructions */}
+          {/* Instructions */}
           <div className="bg-gradient-to-r from-blue-500/25 to-purple-500/25 border-l-4 border-blue-400 p-5 mb-6 backdrop-blur-sm rounded-xl shadow-md">
-              <div className="flex items-start">
-                <div className="text-2xl mr-3">💡</div>
-                <div>
+            <div className="flex items-start">
+              <div className="text-2xl mr-3">💡</div>
+              <div>
                 <p className="text-base text-white font-medium">
-                    <strong className="text-blue-300">Instructions:</strong> Read the story below out loud clearly and slowly. 
-                    When you're ready, click the microphone button to record your voice. Have fun! ✨
-                  </p>
-                </div>
+                  <strong className="text-blue-300">Instructions:</strong> Read the story below out loud clearly and slowly.
+                  When you're ready, click the microphone button to record your voice. Have fun! ✨
+                </p>
               </div>
             </div>
+          </div>
 
           {/* Main Content: Paragraph and Recording Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -464,8 +485,8 @@ const ReadingTask = () => {
             {/* Audio Recording Section - Right Side */}
             <div className="bg-gradient-to-br from-green-500/15 to-blue-500/15 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-green-400/30 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-16 h-16 bg-green-400/10 rounded-full blur-xl"></div>
-            {/* Recording Area */}
-            <div className="bg-white/10 rounded-2xl p-6 text-center border border-white/20 relative z-10">
+              {/* Recording Area */}
+              <div className="bg-white/10 rounded-2xl p-6 text-center border border-white/20 relative z-10">
                 <div className="space-y-4">
                   {selectedFile && !isRecording ? (
                     <>
@@ -487,11 +508,10 @@ const ReadingTask = () => {
                     </>
                   ) : (
                     <>
-                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 transition-all duration-300 ${
-                        isRecording 
-                          ? 'bg-red-500/40 animate-pulse shadow-lg shadow-red-500/30' 
-                          : 'bg-blue-400/30 hover:scale-110'
-                      }`}>
+                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 transition-all duration-300 ${isRecording
+                        ? 'bg-red-500/40 animate-pulse shadow-lg shadow-red-500/30'
+                        : 'bg-blue-400/30 hover:scale-110'
+                        }`}>
                         <span className="text-4xl">{isRecording ? '🎤' : '🎙️'}</span>
                       </div>
                       <div>
@@ -504,7 +524,7 @@ const ReadingTask = () => {
                               {formatTime(recordingTime)}
                             </div>
                             <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                              <div className="bg-gradient-to-r from-red-400 to-pink-400 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                              <div className="bg-gradient-to-r from-red-400 to-pink-400 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                             </div>
                           </div>
                         )}
@@ -522,43 +542,41 @@ const ReadingTask = () => {
                               startRecording();
                             }
                           }}
-                          className={`w-full px-6 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                            isRecording
-                              ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse border-2 border-red-400'
-                              : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-2 border-white/30 shadow-lg'
-                          }`}
+                          className={`w-full px-6 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${isRecording
+                            ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse border-2 border-red-400'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-2 border-white/30 shadow-lg'
+                            }`}
                         >
                           {isRecording ? '⏹️ Stop Recording' : '🎤 Start Recording'}
                         </button>
                       </div>
                     </>
                   )}
-            </div>
-          </div>
+                </div>
+              </div>
 
-            {/* Submit Button */}
-            <div className="mt-6 relative z-10">
-              <button
-                onClick={handleSubmit}
-                disabled={!selectedFile}
-                className={`w-full px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                  selectedFile
+              {/* Submit Button */}
+              <div className="mt-6 relative z-10">
+                <button
+                  onClick={handleSubmit}
+                  disabled={!selectedFile}
+                  className={`w-full px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${selectedFile
                     ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white shadow-xl hover:shadow-2xl border-2 border-yellow-300/50'
                     : 'bg-white/10 text-white/50 cursor-not-allowed border-2 border-white/20'
-                }`}
-              >
-                {selectedFile ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span>🚀</span>
-                    <span>Analyze My Speech!</span>
-                    <span>✨</span>
-                  </span>
-                ) : (
-                  '🎤 Record Audio First'
-                )}
-            </button>
+                    }`}
+                >
+                  {selectedFile ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span>🚀</span>
+                      <span>Analyze My Speech!</span>
+                      <span>✨</span>
+                    </span>
+                  ) : (
+                    '🎤 Record Audio First'
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
           </div>
         </div>
       </div>

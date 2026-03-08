@@ -35,8 +35,8 @@ Classification: ${analysis.classification}
 ADHD Probability: ${(analysis.probability * 100).toFixed(1)}%
 Confidence Level: ${analysis.confidence}
 
-${analysis.probability < 0.3 ? 'Status: Low Risk' : 
-  analysis.probability < 0.7 ? 'Status: Medium Risk' : 'Status: High Risk'}
+${analysis.probability < 0.3 ? 'Status: Low Risk' :
+        analysis.probability < 0.7 ? 'Status: Medium Risk' : 'Status: High Risk'}
 
 ═══════════════════════════════════════════════════════════
 
@@ -109,14 +109,14 @@ For questions or concerns, please consult with a healthcare professional.
     // Create a blob with the report content
     const blob = new Blob([reportContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    
+
     // Create a temporary anchor element and trigger download
     const link = document.createElement('a');
     link.href = url;
     link.download = `ADHD_Analysis_Report_${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(link);
     link.click();
-    
+
     // Clean up
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
@@ -125,47 +125,60 @@ For questions or concerns, please consult with a healthcare professional.
   return (
     <div className="space-y-12 animate-fade-in-up">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-4xl lg:text-5xl font-bold text-neutral-900 mb-4">
+      <div className="text-center relative">
+        <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4 drop-shadow-md">
           Analysis Complete
         </h2>
-        <p className="text-xl text-neutral-600">
+        <p className="text-xl text-white/80 font-medium">
           Here are your comprehensive speech analysis results
         </p>
       </div>
 
       {/* Main Probability Display */}
-      <div className="bg-white rounded-3xl shadow-large p-8 lg:p-12 text-center card-hover">
-        <div className={`inline-flex items-center justify-center w-32 h-32 rounded-full ${probabilityColors.bg} mb-8`}>
-          <div className="text-center text-white">
-            <div className="text-3xl font-black">
+      <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8 lg:p-12 text-center transform hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+        {/* Glow behind the circle */}
+        <div className={`absolute top-12 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full blur-[60px] opacity-40 ${analysis.probability < 0.3 ? 'bg-green-500' :
+            analysis.probability < 0.7 ? 'bg-yellow-500' : 'bg-red-500'
+          }`}></div>
+
+        <div className={`relative inline-flex items-center justify-center w-40 h-40 rounded-full mb-8 border-4 shadow-[0_0_30px_rgba(0,0,0,0.2)_inset] ${analysis.probability < 0.3 ? 'border-green-400 bg-green-500/20' :
+            analysis.probability < 0.7 ? 'border-yellow-400 bg-yellow-500/20' : 'border-red-400 bg-red-500/20'
+          }`}>
+          <div className="absolute inset-2 rounded-full border border-white/30 border-dashed animate-[spin_10s_linear_infinite]"></div>
+          <div className="text-center text-white z-10">
+            <div className="text-5xl font-black drop-shadow-lg">
               {(analysis.probability * 100).toFixed(0)}%
             </div>
-            <div className="text-sm font-medium">ADHD Probability</div>
+            <div className="text-sm font-semibold tracking-wide uppercase text-white/90 mt-1">Probability</div>
           </div>
         </div>
 
-        <h3 className="text-2xl font-bold text-neutral-900 mb-4">
+        <h3 className="text-3xl font-bold text-white mb-4 drop-shadow-md">
           {analysis.classification}
         </h3>
 
-        <div className={`inline-flex items-center px-6 py-3 rounded-full text-sm font-semibold ${probabilityColors.bgLight} ${probabilityColors.text} mb-6`}>
-          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
-            analysis.probability < 0.3 ? 'bg-success-500' :
-            analysis.probability < 0.7 ? 'bg-warning-500' : 'bg-danger-500'
-          }`}></span>
+        <div className={`inline-flex items-center px-6 py-3 rounded-full text-base font-bold shadow-lg mb-8 border ${analysis.probability < 0.3 ? 'bg-green-500/20 border-green-400/50 text-green-300' :
+            analysis.probability < 0.7 ? 'bg-yellow-500/20 border-yellow-400/50 text-yellow-300' : 'bg-red-500/20 border-red-400/50 text-red-300'
+          }`}>
+          <span className={`inline-block w-3 h-3 rounded-full mr-3 animate-pulse shadow-[0_0_10px_currentColor] ${analysis.probability < 0.3 ? 'bg-green-400' :
+              analysis.probability < 0.7 ? 'bg-yellow-400' : 'bg-red-400'
+            }`}></span>
           {analysis.confidence} Confidence
         </div>
 
         {/* Progress Bar */}
-        <div className="max-w-md mx-auto mb-8">
-          <div className="w-full bg-neutral-200 rounded-full h-3">
+        <div className="max-w-xl mx-auto mb-4 bg-black/20 p-6 rounded-3xl border border-white/5">
+          <div className="w-full bg-white/10 rounded-full h-4 mb-3 border border-white/10 overflow-hidden p-0.5">
             <div
-              className={`h-3 rounded-full transition-all duration-1000 ${probabilityColors.bg}`}
-              style={{ width: `${analysis.probability * 100}%` }}
-            ></div>
+              className={`h-full rounded-full transition-all duration-1000 relative overflow-hidden ${analysis.probability < 0.3 ? 'bg-gradient-to-r from-green-600 to-green-400' :
+                  analysis.probability < 0.7 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' : 'bg-gradient-to-r from-red-600 to-red-400'
+                }`}
+              style={{ width: `${Math.max(5, analysis.probability * 100)}%` }}
+            >
+              <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%,transparent_100%)] bg-[length:20px_20px] animate-[slide_1s_linear_infinite]"></div>
+            </div>
           </div>
-          <div className="flex justify-between text-sm text-neutral-500 mt-2">
+          <div className="flex justify-between text-sm font-bold text-white/60 uppercase tracking-wider">
             <span>Low Risk</span>
             <span>High Risk</span>
           </div>
@@ -174,38 +187,47 @@ For questions or concerns, please consult with a healthcare professional.
 
       {/* Recommendations */}
       {recommendations && (
-        <div className={`rounded-3xl p-8 lg:p-12 ${
+        <div className={`backdrop-blur-xl rounded-3xl p-8 lg:p-12 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] transform hover:scale-[1.01] transition-all duration-300 relative overflow-hidden border ${
           analysis.probability > 0.5
-            ? 'bg-danger-50 border border-danger-200'
-            : 'bg-success-50 border border-success-200'
+            ? 'bg-red-500/10 border-red-500/30 shadow-[0_4px_20px_rgba(239,68,68,0.15)]'
+            : 'bg-green-500/10 border-green-500/30 shadow-[0_4px_20px_rgba(34,197,94,0.15)]'
         }`}>
-          <div className="flex items-start">
-            <div className="flex-shrink-0 mr-6">
+          {/* subtle background glow */}
+          <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] -z-10 opacity-30 ${
+            analysis.probability > 0.5 ? 'bg-red-500' : 'bg-green-500'
+          }`}></div>
+
+          <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left">
+            <div className="flex-shrink-0 mb-6 md:mb-0 md:mr-8">
               {analysis.probability > 0.5 ? (
-                <div className="w-16 h-16 bg-danger-100 rounded-2xl flex items-center justify-center">
-                  <svg className="w-8 h-8 text-danger-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-20 h-20 bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-500/30 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                  <svg className="w-10 h-10 text-red-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                 </div>
               ) : (
-                <div className="w-16 h-16 bg-success-100 rounded-2xl flex items-center justify-center">
-                  <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-20 h-20 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                  <svg className="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               )}
             </div>
             <div className="flex-1">
-              <h3 className={`text-2xl font-bold mb-4 ${
-                analysis.probability > 0.5 ? 'text-danger-900' : 'text-success-900'
+              <h3 className={`text-2xl md:text-3xl font-black mb-4 drop-shadow-md ${
+                analysis.probability > 0.5 ? 'text-red-300' : 'text-green-300'
               }`}>
                 {recommendations.warning || recommendations.message}
               </h3>
               {recommendations.note && (
-                <p className="text-lg text-neutral-700 mb-4 leading-relaxed">{recommendations.note}</p>
+                <p className="text-lg md:text-xl text-white/90 mb-5 leading-relaxed font-medium bg-black/10 p-5 rounded-2xl border border-white/5">
+                    {recommendations.note}
+                </p>
               )}
               {recommendations.advice && (
-                <p className="text-lg font-semibold text-neutral-900">{recommendations.advice}</p>
+                <p className="text-xl font-bold text-white drop-shadow-sm flex items-center justify-center md:justify-start">
+                    <span className="mr-3 text-2xl">💡</span> {recommendations.advice}
+                </p>
               )}
             </div>
           </div>
@@ -215,88 +237,90 @@ For questions or concerns, please consult with a healthcare professional.
       {/* Detailed Analysis Grid */}
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Acoustic Features */}
-        <div className="bg-white rounded-3xl shadow-large p-8 card-hover">
-          <div className="flex items-center mb-8">
-            <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-4">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8 transform hover:scale-[1.02] hover:shadow-[0_15px_40px_0_rgba(31,38,135,0.5)] transition-all duration-300">
+          <div className="flex items-center mb-8 border-b border-white/10 pb-6">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mr-5 shadow-[0_0_20px_rgba(59,130,246,0.5)] relative overflow-hidden">
+               <div className="absolute inset-0 bg-white/20 w-1/2 -skew-x-12 animate-[slide_2s_ease-in-out_infinite_alternate]"></div>
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-neutral-900">Acoustic Features</h3>
+            <h3 className="text-2xl font-bold text-white drop-shadow-sm">Acoustic Features</h3>
           </div>
 
           <div className="space-y-6">
-            <div className="flex justify-between items-center py-4 border-b border-neutral-100">
+            <div className="flex justify-between items-center py-4 border-b border-white/10 hover:bg-white/5 px-4 rounded-xl transition-colors">
               <div>
-                <div className="font-semibold text-neutral-900">Pitch (Mean)</div>
-                <div className="text-sm text-neutral-500">Fundamental frequency</div>
+                <div className="font-bold text-white text-lg drop-shadow-sm">Pitch (Mean)</div>
+                <div className="text-sm text-white/70 font-medium">Fundamental frequency</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-neutral-900">{features.pitch_mean.toFixed(2)} Hz</div>
+                <div className="text-xl font-bold text-blue-300 drop-shadow-[0_0_8px_rgba(147,197,253,0.8)]">{features.pitch_mean.toFixed(2)} Hz</div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center py-4 border-b border-neutral-100">
+            <div className="flex justify-between items-center py-4 border-b border-white/10 hover:bg-white/5 px-4 rounded-xl transition-colors">
               <div>
-                <div className="font-semibold text-neutral-900">Jitter</div>
-                <div className="text-sm text-neutral-500">Voice stability</div>
+                <div className="font-bold text-white text-lg drop-shadow-sm">Jitter</div>
+                <div className="text-sm text-white/70 font-medium">Voice stability</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-neutral-900">{features.jitter.toFixed(4)}</div>
+                <div className="text-xl font-bold text-blue-300 drop-shadow-[0_0_8px_rgba(147,197,253,0.8)]">{features.jitter.toFixed(4)}</div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center py-4">
+            <div className="flex justify-between items-center py-4 hover:bg-white/5 px-4 rounded-xl transition-colors">
               <div>
-                <div className="font-semibold text-neutral-900">Shimmer</div>
-                <div className="text-sm text-neutral-500">Amplitude variation</div>
+                <div className="font-bold text-white text-lg drop-shadow-sm">Shimmer</div>
+                <div className="text-sm text-white/70 font-medium">Amplitude variation</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-neutral-900">{features.shimmer.toFixed(4)}</div>
+                <div className="text-xl font-bold text-blue-300 drop-shadow-[0_0_8px_rgba(147,197,253,0.8)]">{features.shimmer.toFixed(4)}</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Linguistic Features */}
-        <div className="bg-white rounded-3xl shadow-large p-8 card-hover">
-          <div className="flex items-center mb-8">
-            <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center mr-4">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8 transform hover:scale-[1.02] hover:shadow-[0_15px_40px_0_rgba(31,38,135,0.5)] transition-all duration-300">
+          <div className="flex items-center mb-8 border-b border-white/10 pb-6">
+            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mr-5 shadow-[0_0_20px_rgba(74,222,128,0.5)] relative overflow-hidden">
+               <div className="absolute inset-0 bg-white/20 w-1/2 -skew-x-12 animate-[slide_2s_ease-in-out_infinite_alternate]" style={{animationDelay: '0.5s'}}></div>
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-neutral-900">Linguistic Features</h3>
+            <h3 className="text-2xl font-bold text-white drop-shadow-sm">Linguistic Features</h3>
           </div>
 
           <div className="space-y-6">
-            <div className="flex justify-between items-center py-4 border-b border-neutral-100">
+            <div className="flex justify-between items-center py-4 border-b border-white/10 hover:bg-white/5 px-4 rounded-xl transition-colors">
               <div>
-                <div className="font-semibold text-neutral-900">Lexical Diversity</div>
-                <div className="text-sm text-neutral-500">Vocabulary richness</div>
+                <div className="font-bold text-white text-lg drop-shadow-sm">Lexical Diversity</div>
+                <div className="text-sm text-white/70 font-medium">Vocabulary richness</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-neutral-900">{(features.lexical_diversity * 100).toFixed(1)}%</div>
+                <div className="text-xl font-bold text-green-300 drop-shadow-[0_0_8px_rgba(134,239,172,0.8)]">{(features.lexical_diversity * 100).toFixed(1)}%</div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center py-4 border-b border-neutral-100">
+            <div className="flex justify-between items-center py-4 border-b border-white/10 hover:bg-white/5 px-4 rounded-xl transition-colors">
               <div>
-                <div className="font-semibold text-neutral-900">Coherence Score</div>
-                <div className="text-sm text-neutral-500">Story structure quality</div>
+                <div className="font-bold text-white text-lg drop-shadow-sm">Coherence Score</div>
+                <div className="text-sm text-white/70 font-medium">Story structure quality</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-neutral-900">{(features.coherence * 100).toFixed(1)}%</div>
+                <div className="text-xl font-bold text-green-300 drop-shadow-[0_0_8px_rgba(134,239,172,0.8)]">{(features.coherence * 100).toFixed(1)}%</div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center py-4">
+            <div className="flex justify-between items-center py-4 hover:bg-white/5 px-4 rounded-xl transition-colors">
               <div>
-                <div className="font-semibold text-neutral-900">Filler Words</div>
-                <div className="text-sm text-neutral-500">Use of "um", "uh", etc.</div>
+                <div className="font-bold text-white text-lg drop-shadow-sm">Filler Words</div>
+                <div className="text-sm text-white/70 font-medium">Use of "um", "uh", etc.</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-neutral-900">{features.fillers}</div>
+                <div className="text-xl font-bold text-green-300 drop-shadow-[0_0_8px_rgba(134,239,172,0.8)]">{features.fillers}</div>
               </div>
             </div>
           </div>
@@ -305,64 +329,61 @@ For questions or concerns, please consult with a healthcare professional.
 
       {/* Transcription */}
       {transcription && analysis.transcription_available && (
-        <div className="bg-white rounded-3xl shadow-large p-8 lg:p-12 card-hover">
-          <div className="flex items-center mb-8">
-            <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mr-4">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8 lg:p-12 transform hover:scale-[1.01] transition-all duration-300">
+          <div className="flex items-center mb-8 border-b border-white/10 pb-6">
+            <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center mr-5 shadow-[0_0_20px_rgba(168,85,247,0.5)]">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-neutral-900">Speech Transcription</h3>
+            <h3 className="text-2xl font-bold text-white drop-shadow-sm">Speech Transcription</h3>
           </div>
 
-          <div className="bg-neutral-50 rounded-2xl p-8">
-            <p className="text-lg text-neutral-800 leading-relaxed whitespace-pre-wrap font-medium">
+          <div className="bg-black/20 rounded-2xl p-8 border border-white/5 shadow-inner">
+            <p className="text-lg text-white/90 leading-relaxed whitespace-pre-wrap font-medium">
               {transcription}
             </p>
           </div>
 
-          <p className="text-sm text-neutral-500 mt-6 text-center">
+          <p className="text-sm text-white/50 mt-6 text-center font-medium tracking-wide">
             * Transcription may not be 100% accurate and is provided for reference only
           </p>
         </div>
       )}
 
       {/* Actions */}
-      <div className="text-center">
+      <div className="flex flex-col sm:flex-row justify-center gap-6 mt-12 pb-6">
         <button
           onClick={() => {
             console.log('Reset button clicked');
-            if (onReset) {
-              onReset();
-            } else {
-              console.error('onReset function not provided');
-            }
+            if (onReset) onReset();
+            else console.error('onReset function not provided');
           }}
-          className="btn-secondary mr-4"
+          className="px-8 py-4 rounded-full font-bold text-lg text-white shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/20 bg-white/10 hover:bg-white/20 hover:scale-105 transition-all duration-300 backdrop-blur-md"
         >
           Analyze Another File
         </button>
         <button
           onClick={downloadReport}
-          className="btn-primary"
+          className="px-8 py-4 rounded-full font-bold text-lg text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] border border-blue-400/50 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 hover:scale-105 hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all duration-300"
         >
           Download Report
         </button>
       </div>
 
       {/* Disclaimer */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-3xl p-8">
+      <div className="mt-8 bg-yellow-500/10 backdrop-blur-md border border-yellow-400/30 rounded-3xl p-8 shadow-[0_4px_20px_0_rgba(234,179,8,0.1)]">
         <div className="flex items-start">
           <div className="flex-shrink-0 mr-6">
-            <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)]">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-yellow-900 mb-4">Important Medical Disclaimer</h3>
-            <p className="text-yellow-800 leading-relaxed">
+            <h3 className="text-2xl font-bold text-yellow-300 mb-3 drop-shadow-sm">Important Medical Disclaimer</h3>
+            <p className="text-yellow-100/90 leading-relaxed text-lg">
               This tool is for screening purposes only and should not replace professional medical diagnosis.
               Results should be interpreted by qualified healthcare professionals. Early intervention can significantly improve outcomes.
             </p>
