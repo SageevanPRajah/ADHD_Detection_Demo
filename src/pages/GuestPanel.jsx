@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import Dashboard from "../components/Dashboard.jsx";
 import { useNavigate } from "react-router-dom";
 import { Eye, Activity, Mic, PenTool, Mail } from "lucide-react";
