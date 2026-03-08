@@ -1,3 +1,4 @@
+import React from "react";
 import { Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home.jsx";
@@ -12,10 +13,9 @@ import HandwritingGame from "./pages/Handwriting/HandwritingGame.jsx";
 import SpeechRouter from "./modules/Speech/speechRouter";
 import SaimanResult from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 
-import Eyetrack from "./pages/eyetrack/Eyetrack.jsx";
 import EyeTrackTerms from "./pages/eyetrack/EyeTrackTerms.jsx";
 import EyeTrackIntro from "./pages/eyetrack/EyeTrackIntro.jsx";
-import ChildEyeGame from "./pages/eyetrack/game/ChildEyeGame.jsx"; 
+import ChildEyeGame from "./pages/eyetrack/games/ChildEyeGame.jsx";
 
 
 function App() {
@@ -32,11 +32,10 @@ function App() {
       <Route path="/guest/handwriting" element={<HandwritingGame />} />
       <Route path="/speech/*" element={<SpeechRouter />} />
 
-      <Route path="/eyetrack" element={<Eyetrack />} />
       <Route path="/eyetrack/terms" element={<EyeTrackTerms />} />
       <Route path="/eyetrack/intro" element={<EyeTrackIntro />} />
+      <Route path="/eyetrack" element={<ChildEyeGame />} />
       <Route path="/eyetrack/child-game" element={<ChildEyeGame />} />
-
 
     </Routes>
   );
