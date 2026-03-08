@@ -77,18 +77,19 @@ export default function Game3AntiTreasure({ durationMs, onEvent, onDone }) {
                 onEventRef.current('cue_on', { game: 3, trial_id: current.id, side: current.cueSide });
                 nextAt = t + 380;
             }
-            if (phase === 'cue') {
+            if (phase === 'cue' || phase === 'resp') {
                 const pos = current.cueSide === 'left' ? leftPos : rightPos;
                 if (alien.complete)
                     ctx.drawImage(alien, pos.x - 70, pos.y - 70, 140, 140);
-                if (t >= nextAt) {
-                    phase = 'resp';
-                    current.tTarget = t;
-                    const targetSide = current.cueSide === 'left' ? 'right' : 'left';
-                    const p = targetSide === 'left' ? leftPos : rightPos;
-                    onEventRef.current('target_on', { game: 3, trial_id: current.id, side: targetSide, x: p.x, y: p.y });
-                    nextAt = t + 1200;
-                }
+            }
+
+            if (phase === 'cue' && t >= nextAt) {
+                phase = 'resp';
+                current.tTarget = t;
+                const targetSide = current.cueSide === 'left' ? 'right' : 'left';
+                const p = targetSide === 'left' ? leftPos : rightPos;
+                onEventRef.current('target_on', { game: 3, trial_id: current.id, side: targetSide, x: p.x, y: p.y });
+                nextAt = t + 1200;
             }
             if (phase === 'resp') {
                 const targetSide = current.cueSide === 'left' ? 'right' : 'left';
