@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import useWebcamRecorder from "../../body posture hooks/webRecorder.js";
-import { sendAdhdSession } from "../../Body posture Utills/api.js";
+import { sendAdhdSession, sendAdhdVideoTest } from "../../Body posture Utills/api.js";
 
 import ScorePanel from "./ScorePanel.jsx";
 import ActionVideo from "./ActionVideo.jsx";
@@ -18,6 +19,7 @@ const FREEZE_DURATION = 8;
 
 export default function SaimanSaysGame() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [running, setRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TOTAL_SESSION_SECONDS);
@@ -41,25 +43,16 @@ export default function SaimanSaysGame() {
   const actionTimerRef = useRef(null);
   const cycleTimerRef = useRef(null);
 
-  /* ================= CAMERA ================= */
-
-  // Camera turns on only when Start is pressed.
-
   /* ================= GLOBAL TIMER ================= */
 
   useEffect(() => {
     if (!running) return;
-
     sessionTimerRef.current = setInterval(() => {
       setTimeLeft((t) => {
-        if (t <= 1) {
-          endSession();
-          return 0;
-        }
+        if (t <= 1) { endSession(); return 0; }
         return t - 1;
       });
     }, 1000);
-
     return () => clearInterval(sessionTimerRef.current);
   }, [running]);
 
@@ -82,7 +75,7 @@ export default function SaimanSaysGame() {
     clearTimeout(actionTimerRef.current);
     actionTimerRef.current = setTimeout(() => {
       setCurrentVideo(FREEZE_VIDEO);
-      setCurrentText("FREEZE! 🧊");
+      setCurrentText(t("saiman.freeze"));
       setMode("freeze");
 
       clearTimeout(cycleTimerRef.current);
@@ -90,7 +83,7 @@ export default function SaimanSaysGame() {
         runRound();
       }, FREEZE_DURATION * 1000);
     }, ACTION_DURATION * 1000);
-  }, []);
+  }, [t]);
 
   const startGameLoop = useCallback(() => {
     stopGameLoop();
@@ -106,14 +99,11 @@ export default function SaimanSaysGame() {
 
     const okStream = await setupStream();
     setCameraReady(okStream);
-    setCameraError(okStream ? "" : "Camera permission required.");
+    setCameraError(okStream ? "" : t("saiman.cameraRequired"));
     if (!okStream) return;
 
     const ok = await startRecording();
-    if (!ok) {
-      setCameraError("Camera recording failed.");
-      return;
-    }
+    if (!ok) { setCameraError(t("saiman.cameraFailed")); return; }
 
     setRunning(true);
     startGameLoop();
@@ -122,38 +112,37 @@ export default function SaimanSaysGame() {
   const endSession = async () => {
     stopGameLoop();
     setRunning(false);
-
     const blob = await stopRecording();
     setLastRecording(blob);
-
-    // turn camera OFF completely
     stopStream();
     setCameraReady(false);
 
-    setApiStatus("loading");
-    const result = await sendAdhdSession(
-      {
-        freeze_stability: 0.6,
-        reaction_time: 0.5,
-        fidgeting: 0.4,
-      },
-      { rounds: roundCount }
-    );
+    if (!blob) { console.error("No video recorded."); return; }
 
+    setApiStatus("loading");
+    const response = await sendAdhdVideoTest(blob, roundCount);
     setApiStatus("idle");
-    setAdhdResult(result);
+
+    if (response && response.result) {
+      setAdhdResult({
+        adhd_score: response.result.adhd_score,
+        adhd_probability: response.result.adhd_probability,
+        subtype: response.result.subtype,
+        derived_features: response.result.derived_features,
+        message: response.message
+      });
+    } else {
+      console.error("Prediction failed or returned empty result");
+    }
   };
 
   /* ================= UI HELPERS ================= */
 
   const formatTime = (sec) =>
-    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(
-      sec % 60
-    ).padStart(2, "0")}`;
+    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 
   const triggerDownload = (blob) => {
     if (!blob) return;
-    
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -170,154 +159,84 @@ export default function SaimanSaysGame() {
     <div className="min-h-screen bg-gradient-to-b from-[#0e1b4d] via-[#1b3a8f] to-[#274690] text-white">
       {/* HEADER */}
       <header className="flex items-center justify-between px-10 py-6">
-        <h1 className="text-4xl font-extrabold">🦸 Saiman Says</h1>
-        <button
-          onClick={() => navigate("/")}
-          className="px-5 py-2 bg-white/20 rounded-xl"
-        >
-          Exit
+        <h1 className="text-4xl font-extrabold">{t("saiman.title")}</h1>
+        <button onClick={() => navigate("/saiman-instructions")} className="px-5 py-2 bg-white/20 rounded-xl">
+          {t("saiman.exit")}
         </button>
       </header>
 
       {/* GAME AREA */}
       <main className="px-5 pb-5">
-        
-       {/* GAME AREA */}
-<div className="p-8 border rounded-[2.5rem] bg-white/10 border-white/20 shadow-2xl">
-
-  {/* TOP STATUS BAR */}
-  <div className="flex justify-between mb-6 text-lg font-semibold text-white/80">
-    <span>⏱ Time: {formatTime(timeLeft)}</span>
-    <span>🔁 Rounds: {roundCount}</span>
-  </div>
-
-  {/* ACTION TEXT */}
-  <h2 className="mb-8 text-5xl font-black tracking-wide text-center">
-    {currentText || "Get Ready Hero!"}
-  </h2>
-
-  {/* 2 COLUMN LAYOUT */}
-  <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-
-    {/* LEFT — SAIMAN ACTION VIDEO */}
-    <div className="flex flex-col items-center">
-      <p className="mb-3 text-sm font-bold tracking-wide uppercase text-cyan-300">
-        Watch Saiman
-      </p>
-
-      <div className="relative  overflow-hidden rounded-3xl border border-white/30 bg-black/60 aspect-video min-h-[400px]">
-
-        {running ? (
-          <ActionVideo src={currentVideo} />
-        ) : (
-          <div className="flex items-center justify-center h-64 text-white/60">
-            Action video appears here
+        <div className="p-8 border rounded-[2.5rem] bg-white/10 border-white/20 shadow-2xl">
+          {/* TOP STATUS BAR */}
+          <div className="flex justify-between mb-6 text-lg font-semibold text-white/80">
+            <span>{t("saiman.time")}: {formatTime(timeLeft)}</span>
+            <span>{t("saiman.rounds")}: {roundCount}</span>
           </div>
-        )}
-      </div>
 
-      <p className="mt-3 text-sm text-center text-white/70">
-        Copy Saiman&apos;s move exactly
-      </p>
-    </div>
+          {/* ACTION TEXT */}
+          <h2 className="mb-8 text-5xl font-black tracking-wide text-center">
+            {currentText || t("saiman.getReady")}
+          </h2>
 
-    {/* RIGHT — LIVE CAMERA */}
-    <div className="flex flex-col items-center">
-      <p className="mb-3 text-sm font-bold tracking-wide text-yellow-300 uppercase">
-        You on Camera
-      </p>
+          {/* 2 COLUMN LAYOUT */}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="flex flex-col items-center">
+              <p className="mb-3 text-sm font-bold tracking-wide uppercase text-cyan-300">{t("saiman.watchSaiman")}</p>
+              <div className="relative overflow-hidden rounded-3xl border border-white/30 bg-black/60 aspect-video min-h-[400px]">
+                {running ? <ActionVideo src={currentVideo} /> : (
+                  <div className="flex items-center justify-center h-64 text-white/60">{t("saiman.actionPlaceholder")}</div>
+                )}
+              </div>
+              <p className="mt-3 text-sm text-center text-white/70">{t("saiman.copySaiman")}</p>
+            </div>
 
-      <div className="relative  overflow-hidden rounded-3xl border border-white/30 bg-black/60 aspect-video min-h-[400px]">
-
-        <video
-          ref={videoRef}
-          className="object-cover w-full h-full"
-          autoPlay
-          muted
-          playsInline
-        />
-
-        {/* CAMERA OVERLAY */}
-        {(!cameraReady || !running) && (
-          <div className="absolute inset-0 flex items-center justify-center px-6 text-lg text-center bg-black/70 text-white/80">
-            {cameraError || "Press Start to begin"}
+            <div className="flex flex-col items-center">
+              <p className="mb-3 text-sm font-bold tracking-wide text-yellow-300 uppercase">{t("saiman.youOnCamera")}</p>
+              <div className="relative overflow-hidden rounded-3xl border border-white/30 bg-black/60 aspect-video min-h-[400px]">
+                <video ref={videoRef} className="object-cover w-full h-full" autoPlay muted playsInline />
+                {(!cameraReady || !running) && (
+                  <div className="absolute inset-0 flex items-center justify-center px-6 text-lg text-center bg-black/70 text-white/80">
+                    {cameraError || t("saiman.pressStart")}
+                  </div>
+                )}
+                {mode === "freeze" && running && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-blue-900/40 backdrop-blur-sm"></div>
+                )}
+              </div>
+              <p className="mt-3 text-sm text-center text-white/70">{t("saiman.stayInside")}</p>
+            </div>
           </div>
-        )}
 
-        {/* FREEZE VISUAL */}
-        {mode === "freeze" && running && (
-          <div className="absolute inset-0 flex items-center justify-center bg-blue-900/40 backdrop-blur-sm">
-          
+          {/* CONTROLS */}
+          <div className="flex justify-center gap-8 mt-10">
+            <button onClick={startSession} disabled={running}
+              className={`px-12 py-4 text-xl font-black rounded-2xl transition ${running ? "bg-gray-500" : "bg-green-400 hover:bg-green-300 text-black"}`}>
+              {t("saiman.startGame")}
+            </button>
+            <button onClick={endSession} disabled={!running}
+              className={`px-12 py-4 text-xl font-black rounded-2xl transition ${running ? "bg-red-500 hover:bg-red-400" : "bg-gray-500"}`}>
+              {t("saiman.stop")}
+            </button>
           </div>
-        )}
-      </div>
+        </div>
 
-      <p className="mt-3 text-sm text-center text-white/70">
-        Stay inside the camera box
-      </p>
-    </div>
-
-  </div>
-
-  {/* CONTROLS */}
-  <div className="flex justify-center gap-8 mt-10">
-    <button
-      onClick={startSession}
-      disabled={running}
-      className={`px-12 py-4 text-xl font-black rounded-2xl transition ${
-        running
-          ? "bg-gray-500"
-          : "bg-green-400 hover:bg-green-300 text-black"
-      }`}
-    >
-      Start Game
-    </button>
-
-    <button
-      onClick={endSession}
-      disabled={!running}
-      className={`px-12 py-4 text-xl font-black rounded-2xl transition ${
-        running
-          ? "bg-red-500 hover:bg-red-400"
-          : "bg-gray-500"
-      }`}
-    >
-      Stop
-    </button>
-  </div>
-</div>
-
-         
-         <button
-            onClick={() => {
-              if (adhdResult) {
-                localStorage.setItem('saimanAdhdResult', JSON.stringify(adhdResult));
-              }
-              navigate("/saiman-result");
-            }}  
-            className={`w-full py-4 mt-10 rounded-2xl transition ${
-              adhdResult 
-                ? "bg-white/20 hover:bg-white/30 cursor-pointer" 
-                : apiStatus === "loading"
-                ? "bg-white/10 cursor-wait opacity-50"
-                : "bg-white/20 hover:bg-white/30 cursor-pointer"
-            }`}
-            disabled={apiStatus === "loading"}
-          >
-            {apiStatus === "loading" ? "Analyzing..." : "View Result Page"}
-          </button>
-        
-
-       
+        <button
+          onClick={() => {
+            if (adhdResult) localStorage.setItem('saimanAdhdResult', JSON.stringify(adhdResult));
+            navigate("/saiman-result");
+          }}
+          className={`w-full py-4 mt-10 rounded-2xl transition ${adhdResult ? "bg-white/20 hover:bg-white/30 cursor-pointer" : apiStatus === "loading" ? "bg-white/10 cursor-wait opacity-50" : "bg-white/20 hover:bg-white/30 cursor-pointer"}`}
+          disabled={apiStatus === "loading"}
+        >
+          {apiStatus === "loading" ? t("saiman.analyzing") : t("saiman.viewResult")}
+        </button>
 
         {/* DOWNLOAD */}
         <div className="max-w-3xl mx-auto mt-8">
-          <button
-            onClick={() => lastRecording && triggerDownload(lastRecording)}
-            disabled={!lastRecording || running}
-            className="w-full py-4 rounded-2xl bg-white/20 hover:bg-white/30 disabled:opacity-50"
-          >
-            {lastRecording ? "Download Recording" : "No Recording Yet"}
+          <button onClick={() => lastRecording && triggerDownload(lastRecording)} disabled={!lastRecording || running}
+            className="w-full py-4 rounded-2xl bg-white/20 hover:bg-white/30 disabled:opacity-50">
+            {lastRecording ? t("saiman.downloadRecording") : t("saiman.noRecording")}
           </button>
         </div>
       </main>
