@@ -10,8 +10,10 @@ import {
   Star,
   Sparkles,
   PauseCircle,
-  Eye
+  Eye,
+  ArrowLeft
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { predictFromJSON } from "../../handwriting util/api.js";
 import { useTranslation } from "react-i18next";
 
@@ -318,7 +320,7 @@ export default function HandwritingGame() {
   };
 
   useEffect(() => {
-    if (!gameStarted) return;
+    if (!gameStarted || showResultScreen) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -350,10 +352,10 @@ export default function HandwritingGame() {
       window.removeEventListener('orientationchange', resizeCanvas);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameStarted]);
+  }, [gameStarted, showResultScreen, currentIndex]);
 
   useEffect(() => {
-    if (!gameStarted) return;
+    if (!gameStarted || showResultScreen) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -383,7 +385,7 @@ export default function HandwritingGame() {
       canvas.removeEventListener('touchend', onUp);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameStarted]);
+  }, [gameStarted, showResultScreen]);
 
   useEffect(() => {
     if (ctxRef.current) ctxRef.current.lineWidth = penSize;
@@ -527,7 +529,6 @@ export default function HandwritingGame() {
 
     if (currentIndex < activities.length - 1) {
       setCurrentIndex((i) => i + 1);
-      setTimeout(() => clearCanvas(true), 50);
     } else {
       alert(t("hw.finishedAll", { count: activities.length }));
       goHome();
@@ -538,9 +539,16 @@ export default function HandwritingGame() {
 
   if (!gameStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#1e3a7a] via-[#3d5aa8] to-[#4a6cb8] text-white relative overflow-hidden p-4 md:p-8">
-
+    <div className="min-h-screen bg-gradient-to-b from-[#0e1b4d] via-[#1b3a8f] to-[#274690] text-white relative overflow-hidden p-4 md:p-8">
         <div className="mx-auto max-w-5xl">
+          <button
+            onClick={() => navigate("/guest")}
+            className="mb-6 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20 ring-1 ring-white/10"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/40 md:p-8">
             <div className="flex flex-col items-center gap-3 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/30 to-indigo-500/10 ring-1 ring-white/10">
@@ -602,8 +610,8 @@ export default function HandwritingGame() {
                         <div className="flex items-start justify-between">
                           <Star className="h-4 w-4 text-yellow-200/90" />
                         </div>
-                        <div className="mt-3 text-sm font-bold text-white">{g.label}</div>
-                        <div className="mt-1 text-xs text-slate-300">{g.hint}</div>
+                        <div className={`mt-3 text-lg ${g.font} text-white uppercase`}>{g.label}</div>
+                        <div className="mt-1 text-xs font-bold text-slate-300">{g.hint}</div>
                         <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-sky-200">
                           {t("hw.startLabel")} <ArrowRight className="h-3 w-3" />
                         </div>
@@ -630,7 +638,7 @@ export default function HandwritingGame() {
 
   if (showResultScreen) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#1e3a7a] via-[#3d5aa8] to-[#4a6cb8] text-white relative overflow-hidden p-4 md:p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#0e1b4d] via-[#1b3a8f] to-[#274690] text-white relative overflow-hidden p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/40 text-center">
           {isPredicting ? (
             <div className="flex flex-col items-center gap-5 my-8">
@@ -666,7 +674,7 @@ export default function HandwritingGame() {
                 <div className="flex justify-between items-center pb-4 border-b border-white/10">
                   <div className="text-sm text-slate-400 font-semibold">{t("hw.probability")}</div>
                   <div className="text-xl font-bold text-white">
-                    {currentPrediction?.probability ? (currentPrediction.probability * 100).toFixed(1) : '0'}%
+                    {currentPrediction?.probability ? (currentPrediction.probability * 10).toFixed(1) : '0'}/10
                   </div>
                 </div>
 
@@ -692,7 +700,7 @@ export default function HandwritingGame() {
 
   // -------------------- GAME SCREEN --------------------
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1e3a7a] via-[#3d5aa8] to-[#4a6cb8] text-white relative overflow-hidden p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#0e1b4d] via-[#1b3a8f] to-[#274690] text-white relative overflow-hidden p-4 md:p-8">
 
       <div className="mx-auto max-w-6xl">
         <div className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/40 md:p-6">
@@ -954,7 +962,7 @@ export default function HandwritingGame() {
                   <div>
                     <span className="text-xs text-slate-300">{t("hw.probabilityLabel")} </span>
                     <span className="text-lg font-semibold text-white">
-                      {(predictionResult.probability * 100).toFixed(1)}%
+                      {(predictionResult.probability * 10).toFixed(1)}/10
                     </span>
                   </div>
                   <div>
