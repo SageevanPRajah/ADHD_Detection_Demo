@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Navigation from '../components/Navigation';
 import FileUpload from '../components/FileUpload';
-import Footer from '../components/Footer';
 
 const AnalyzePage = () => {
   const navigate = useNavigate();
@@ -36,19 +35,22 @@ const AnalyzePage = () => {
 
       <section id="upload" className="section-padding">
         <div className="container-custom">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">{t('speech.analyzeSpeech')}</h2>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">{t('speech.analyzeSpeechDesc')}</p>
+          <div className="text-center mb-16 relative z-10 animate-fade-in-up">
+            <h2 className="text-4xl lg:text-5xl font-black text-white mb-6 drop-shadow-md">{t('speech.analyzeSpeech')}</h2>
+            <p className="text-xl text-white/80 font-medium tracking-wide max-w-2xl mx-auto">{t('speech.analyzeSpeechDesc')}</p>
           </div>
 
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-large p-8 lg:p-12 card-hover border border-white/20">
-              <FileUpload
-                ref={fileUploadRef}
-                onAnalysisComplete={handleAnalysisComplete}
-                onError={handleError}
-                onLoading={handleLoading}
-              />
+          <div className="max-w-4xl mx-auto relative z-10 animate-fade-in-up animate-delay-100">
+            <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8 lg:p-12 border border-white/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative z-10">
+                <FileUpload
+                  ref={fileUploadRef}
+                  onAnalysisComplete={handleAnalysisComplete}
+                  onError={handleError}
+                  onLoading={handleLoading}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -74,8 +76,6 @@ const AnalyzePage = () => {
           </div>
         </section>
       )}
-
-      <Footer />
     </div>
   );
 };
