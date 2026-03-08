@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Dashboard from "../components/Dashboard.jsx";
 import { Eye, Activity, Mic, PenTool, ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -64,12 +65,27 @@ const AdminPanel = () => {
             <h3 className="text-xs font-semibold text-slate-200">{t("admin.dataPortals")}</h3>
             <p className="mt-1 text-[11px] text-slate-400">{t("admin.dataPortalsDesc")}</p>
             <div className="mt-3 space-y-2 text-xs">
-              <a href="https://eye-tracking-simulation.vercel.app/" target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border border-slate-700/80 bg-black/25 px-3 py-2 text-slate-200 transition hover:border-clinic-primary hover:bg-clinic-primary/10">
-                <span className="flex items-center gap-2"><Eye className="h-4 w-4 text-clinic-primary" /> {t("admin.eyeTrackingData")}</span>
+              <Link
+                to="/eyecollect"
+                className="flex items-center justify-between rounded-xl border border-slate-700/80 bg-black/25 px-3 py-2 text-slate-200 transition hover:border-clinic-primary hover:bg-clinic-primary/10"
+              >
+                <span className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-clinic-primary" />
+                  Eye Tracking Data Collection
+                </span>
                 <ExternalLink className="h-3 w-3 text-slate-400" />
-              </a>
-              <a href="https://adhd-poses-detection-games.vercel.app/" target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border border-slate-700/80 bg-black/25 px-3 py-2 text-slate-200 transition hover:border-clinic-primary hover:bg-clinic-primary/10">
-                <span className="flex items-center gap-2"><Activity className="h-4 w-4 text-clinic-secondary" /> {t("admin.bodyPostureData")}</span>
+              </Link>
+
+              <a
+                href="https://adhd-poses-detection-games.vercel.app/"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between rounded-xl border border-slate-700/80 bg-black/25 px-3 py-2 text-slate-200 transition hover:border-clinic-primary hover:bg-clinic-primary/10"
+              >
+                <span className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-clinic-secondary" />
+                  Body Posture Tracking Data Collection
+                </span>
                 <ExternalLink className="h-3 w-3 text-slate-400" />
               </a>
               <a href="#" target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border border-slate-700/80 bg-black/25 px-3 py-2 text-slate-200 transition hover:border-clinic-primary hover:bg-clinic-primary/10">

@@ -2,7 +2,40 @@ import React from "react";
 import Dashboard from "../components/Dashboard.jsx";
 import { useNavigate } from "react-router-dom";
 import { Eye, Activity, Mic, PenTool, Mail } from "lucide-react";
-import { useTranslation } from "react-i18next";
+
+const games = [
+  {
+    id: "eye",
+    label: "Eye Tracking Game",
+    description: "Follow moving targets to measure focus, saccades and gaze shifts.",
+    icon: Eye,
+    route: "/eyetrack/terms"
+  },
+  {
+    id: "body",
+    label: "Body Posture Tracking Game",
+    description:
+      "Mirror simple poses to observe restlessness, fidgeting and posture changes.",
+    icon: Activity,
+    route: "/saiman-instructions"
+  },
+  {
+    id: "voice",
+    label: "Voice Tracking Game",
+    description:
+      "Read fun phrases aloud while the system listens for pace and impulsive speech.",
+    icon: Mic,
+    route: "/speech/"
+  },
+  {
+    id: "handwriting",
+    label: "Handwriting Tracking Game",
+    description:
+      "Trace shapes and letters to capture handwriting rhythm and micro-pauses.",
+    icon: PenTool,
+    route: "/guest/handwriting"
+  }
+];
 
 const GuestPanel = () => {
   const navigate = useNavigate();
