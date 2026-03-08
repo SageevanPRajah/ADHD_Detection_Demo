@@ -1,8 +1,11 @@
 import React from "react";
 import { Brain, Menu } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher.jsx";
 
 const Dashboard = ({ children, roleLabel = "Welcome" }) => {
   const [open, setOpen] = React.useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-clinic-bgDark text-clinic-textDark">
@@ -15,15 +18,16 @@ const Dashboard = ({ children, roleLabel = "Welcome" }) => {
             </div>
             <div className="leading-tight">
               <p className="text-sm font-semibold tracking-tight">
-                ADHD Care Portal
+                {t("dashboard.title")}
               </p>
               <p className="text-[11px] text-slate-400">
-                Early screening & guidance
+                {t("dashboard.subtitle")}
               </p>
             </div>
           </div>
 
           <div className="hidden items-center gap-3 text-xs text-slate-300 sm:flex">
+            <LanguageSwitcher />
             <span className="rounded-full bg-clinic-primary/10 px-3 py-1 font-medium text-clinic-primary">
               {roleLabel}
             </span>
@@ -40,7 +44,10 @@ const Dashboard = ({ children, roleLabel = "Welcome" }) => {
         {/* simple mobile dropdown */}
         {open && (
           <div className="border-t border-slate-800 bg-clinic-surfaceDark px-4 py-2 text-xs text-slate-300 sm:hidden">
-            <p>Role: {roleLabel}</p>
+            <div className="flex items-center justify-between">
+              <p>{t("dashboard.role")}: {roleLabel}</p>
+              <LanguageSwitcher />
+            </div>
           </div>
         )}
       </header>

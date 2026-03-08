@@ -5,6 +5,7 @@ import App from "./App.jsx";
 
 import "./index.css";   // Tailwind
 import "./styles.css";  // Game styles
+import "./i18n.js";
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
