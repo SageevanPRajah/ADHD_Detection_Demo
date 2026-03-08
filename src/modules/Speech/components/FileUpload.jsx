@@ -220,46 +220,46 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
       {/* File Upload Area */}
       {mode === 'upload' && (
         <div
-          className={`relative border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 ${dragActive ? 'border-blue-400 bg-blue-500/20 scale-105' : selectedFile ? 'border-green-400 bg-green-500/20' : 'border-white/30 hover:border-white/50 hover:bg-white/5 cursor-pointer'}`}
+          className={`relative border-2 border-dashed rounded-[2rem] p-12 text-center transition-all duration-300 group ${dragActive ? 'border-blue-400 bg-blue-500/20 scale-105 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : selectedFile ? 'border-green-400 bg-green-500/10 shadow-[0_0_20px_rgba(74,222,128,0.2)]' : 'border-white/30 hover:border-blue-400/50 hover:bg-white/5 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] cursor-pointer'}`}
           onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
           onClick={() => { if (!selectedFile) fileInputRef.current?.click(); }}
         >
           <input ref={fileInputRef} type="file" accept={allowedExtensions.join(',')} onChange={handleFileInputChange}
             className={`absolute inset-0 w-full h-full opacity-0 ${selectedFile ? 'pointer-events-none' : 'cursor-pointer'}`} />
-          <div className="space-y-6">
+          <div className="space-y-6 relative z-10">
             {selectedFile ? (
-              <>
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-2xl mb-6">
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="animate-fade-in-up">
+                <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-3xl mb-6 shadow-[0_0_20px_rgba(16,185,129,0.5)] transform hover:rotate-12 transition-transform duration-300">
+                  <svg className="w-12 h-12 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{selectedFile.name}</h3>
-                  <p className="text-white/80 mb-4">{formatFileSize(selectedFile.size)}</p>
+                  <h3 className="text-3xl font-black text-white mb-2 drop-shadow-sm">{selectedFile.name}</h3>
+                  <p className="text-green-300 font-medium mb-6 drop-shadow-sm">{formatFileSize(selectedFile.size)}</p>
                   <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); clearFile(); }}
-                    className="relative z-10 text-white/70 hover:text-white transition-colors text-sm font-medium">
+                    className="relative z-10 px-6 py-2 rounded-full border border-white/20 hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-300 text-white/70 transition-all duration-300 text-sm font-bold tracking-wider">
                     {t('speech.removeFile')}
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 rounded-2xl mb-6">
-                  <svg className="w-10 h-10 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="animate-fade-in-up group-hover:transform group-hover:-translate-y-2 transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-24 h-24 bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl mb-8 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] group-hover:bg-blue-500/20 transition-all duration-300">
+                  <svg className="w-12 h-12 text-white/70 group-hover:text-blue-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white mb-4">{t('speech.dropAudio')}</h3>
-                  <p className="text-white/80 mb-6 max-w-md mx-auto">{t('speech.dropAudioDesc')}</p>
-                  <div className="flex flex-wrap justify-center gap-2 text-sm text-white/60">
+                  <h3 className="text-3xl font-black text-white mb-4 tracking-wide group-hover:text-blue-200 transition-colors duration-300">{t('speech.dropAudio')}</h3>
+                  <p className="text-white/70 font-medium mb-8 max-w-md mx-auto leading-relaxed">{t('speech.dropAudioDesc')}</p>
+                  <div className="flex flex-wrap justify-center gap-3">
                     {allowedExtensions.map((ext, index) => (
-                      <span key={index} className="px-3 py-1 bg-white/10 rounded-full">{ext.toUpperCase()}</span>
+                      <span key={index} className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-white/60 tracking-wider group-hover:border-white/20 group-hover:bg-white/10 transition-colors duration-300">{ext.toUpperCase()}</span>
                     ))}
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -267,75 +267,96 @@ const FileUpload = forwardRef(({ onAnalysisComplete, onError, onLoading, initial
 
       {/* Recording Area */}
       {mode === 'record' && (
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-12 text-center border border-white/20">
-          <div className="space-y-6">
+        <div className="bg-white/5 backdrop-blur-xl rounded-[2rem] p-12 text-center border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 pointer-events-none"></div>
+          <div className="space-y-8 relative z-10">
             {selectedFile && recordedBlob ? (
-              <>
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-2xl mb-6">
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="animate-fade-in-up">
+                <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-3xl mb-6 shadow-[0_0_20px_rgba(16,185,129,0.5)] transform hover:rotate-12 transition-transform duration-300">
+                  <svg className="w-12 h-12 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{t('speech.recordingSaved')}</h3>
-                  <p className="text-white/80 mb-4">{t('speech.duration')}: {formatTime(recordingTime)}</p>
-                  <button onClick={clearFile} className="text-white/70 hover:text-white transition-colors text-sm font-medium">
+                  <h3 className="text-3xl font-black text-white mb-2 drop-shadow-sm">{t('speech.recordingSaved')}</h3>
+                  <p className="text-green-300 font-medium tracking-wider mb-8 drop-shadow-sm">{t('speech.duration')}: {formatTime(recordingTime)}</p>
+                  <button onClick={clearFile} className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 text-white/80 hover:text-white transition-all duration-300 text-sm font-bold tracking-wider">
                     {t('speech.recordAgain')}
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 ${isRecording ? 'bg-red-500/50 animate-pulse' : 'bg-white/10'}`}>
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="animate-fade-in-up">
+                <div className={`relative inline-flex items-center justify-center w-32 h-32 rounded-full mb-8 transition-all duration-300 ${isRecording ? 'bg-red-500 shadow-[0_0_40px_rgba(239,68,68,0.8)] scale-110 animate-pulse' : 'bg-white/10 border border-white/20 shadow-inner'}`}>
+                  {isRecording && <div className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-75"></div>}
+                  <svg className={`w-14 h-14 ${isRecording ? 'text-white drop-shadow-md' : 'text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white mb-4">
+                  <h3 className="text-3xl font-black text-white mb-6 drop-shadow-md">
                     {isRecording ? t('speech.recordingStatus') : t('speech.clickToRecord')}
                   </h3>
                   {isRecording && (
-                    <div className="mb-6">
-                      <div className="text-3xl font-mono font-bold text-red-400 mb-2">{formatTime(recordingTime)}</div>
-                      <div className="w-full bg-white/10 rounded-full h-2">
-                        <div className="bg-red-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                    <div className="mb-8 p-6 bg-black/20 rounded-2xl border border-red-500/30 backdrop-blur-md">
+                      <div className="text-5xl font-mono font-black text-red-400 mb-4 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)] tracking-wider">{formatTime(recordingTime)}</div>
+                      <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                        <div className="bg-gradient-to-r from-red-600 to-red-400 h-full rounded-full animate-pulse"></div>
                       </div>
                     </div>
                   )}
-                  <p className="text-white/80 mb-6 max-w-md mx-auto">
+                  <p className="text-white/70 font-medium mb-10 max-w-md mx-auto leading-relaxed">
                     {isRecording ? t('speech.recordingTip') : t('speech.recordPermTip')}
                   </p>
                   <button onClick={() => { isRecording ? stopRecording() : startRecording(); }}
-                    className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : 'bg-white/20 hover:bg-white/30 text-white border border-white/30'}`}>
-                    {isRecording ? t('speech.stopRecording') : t('speech.startRecording')}
+                    className={`px-10 py-5 rounded-full font-black text-lg uppercase tracking-wider transition-all duration-300 transform ${isRecording ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] hover:scale-110' : 'bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:scale-105 hover:shadow-xl backdrop-blur-md'}`}>
+                    <span className="flex items-center gap-3">
+                      {isRecording ? <><span className="w-3 h-3 bg-white rounded-sm animate-pulse"></span> {t('speech.stopRecording')}</> : <><span className="text-red-400">●</span> {t('speech.startRecording')}</>}
+                    </span>
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Age Selection */}
-      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-        <div className="max-w-md mx-auto">
-          <label htmlFor="childAge" className="block text-lg font-semibold text-white mb-4">{t('speech.childAge')}</label>
-          <select id="childAge" value={childAge} onChange={(e) => setChildAge(parseInt(e.target.value))}
-            className="w-full px-6 py-4 text-lg bg-white/10 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all">
-            {Array.from({ length: 7 }, (_, i) => i + 6).map(age => (
-              <option key={age} value={age} className="text-lg bg-[#0E1B4D]">{age} {t('speech.yearsOld')}</option>
-            ))}
-          </select>
-          <p className="text-sm text-white/70 mt-3 text-center">{t('speech.ageNote')}</p>
+      <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-10 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] relative overflow-hidden group/age">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover/age:opacity-100 transition-opacity duration-500"></div>
+        <div className="max-w-md mx-auto relative z-10">
+          <label htmlFor="childAge" className="block text-sm font-bold text-white/40 uppercase tracking-[0.2em] mb-4 text-center">{t('speech.childAge')}</label>
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur-sm"></div>
+            <select
+              id="childAge"
+              value={childAge}
+              onChange={(e) => setChildAge(parseInt(e.target.value))}
+              className="relative w-full px-8 py-5 text-2xl font-black bg-black/40 border border-white/10 rounded-2xl text-white appearance-none focus:outline-none focus:border-blue-500/50 hover:bg-black/60 transition-all duration-300 shadow-2xl cursor-pointer text-center tracking-tighter"
+            >
+              {[6, 7, 8, 9, 10].map(age => (
+                <option key={age} value={age} className="text-lg bg-[#0E1B4D] font-bold py-4">
+                  {age} {t('speech.yearsOld')}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-8 text-blue-400 group-hover:text-white transition-colors duration-300">
+              <svg className="h-6 w-6 transform group-hover:translate-y-1 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-xs font-bold text-white/30 mt-6 text-center tracking-widest uppercase">{t('speech.ageNote')}</p>
         </div>
       </div>
 
       {/* Submit Button */}
-      <div className="text-center">
+      <div className="text-center mt-12 animate-fade-in-up">
         <button onClick={() => handleSubmit()} disabled={!selectedFile}
-          className={`px-12 py-5 rounded-2xl font-bold text-lg uppercase tracking-wider transition-all duration-300 transform ${selectedFile ? 'bg-white text-[#0E1B4D] hover:bg-white/90 hover:scale-105 shadow-lg hover:shadow-xl' : 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'}`}>
-          {selectedFile ? t('speech.analyzeBtn') : mode === 'upload' ? t('speech.selectFileFirst') : t('speech.recordFirst')}
+          className={`relative overflow-hidden group px-14 py-6 rounded-full font-black text-xl uppercase tracking-widest transition-all duration-300 transform ${selectedFile ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:scale-105 shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-blue-400/50 hover:shadow-[0_0_40px_rgba(168,85,247,0.7)]' : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10 backdrop-blur-md'}`}>
+          {selectedFile && <div className="absolute inset-0 bg-white/20 w-1/2 -skew-x-12 group-hover:animate-[slide_1s_ease-in-out]"></div>}
+          <span className="relative z-10 drop-shadow-md">
+            {selectedFile ? t('speech.analyzeBtn') : mode === 'upload' ? t('speech.selectFileFirst') : t('speech.recordFirst')}
+          </span>
         </button>
       </div>
     </div>

@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Navigation from '../components/Navigation';
 import AnalysisResults from '../components/AnalysisResults';
-import Footer from '../components/Footer';
 
 const ResultsPage = () => {
   const navigate = useNavigate();
@@ -128,7 +127,6 @@ const ResultsPage = () => {
           <AnalysisResults result={analysisResult} onReset={handleReset} />
         </div>
       </section>
-      <Footer />
     </div>
   );
 };
