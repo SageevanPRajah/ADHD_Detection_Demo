@@ -16,7 +16,6 @@ import Eyetrack from "./pages/eyetrack/Eyetrack.jsx";
 import EyeTrackTerms from "./pages/eyetrack/EyeTrackTerms.jsx";
 import EyeTrackIntro from "./pages/eyetrack/EyeTrackIntro.jsx";
 import ChildEyeGame from "./pages/eyetrack/game/ChildEyeGame.jsx"; 
-import Eyecollect from "./pages/eyetrack/game/Eyecollect.jsx"; 
 
 
 function App() {
@@ -37,7 +36,7 @@ function App() {
       <Route path="/eyetrack/terms" element={<EyeTrackTerms />} />
       <Route path="/eyetrack/intro" element={<EyeTrackIntro />} />
       <Route path="/eyetrack/child-game" element={<ChildEyeGame />} />
-      <Route path="/eyecollect" element={<Eyecollect />} />
+
 
     </Routes>
   );
