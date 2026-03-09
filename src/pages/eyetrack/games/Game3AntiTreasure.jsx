@@ -45,7 +45,7 @@ export default function Game3AntiTreasure({ durationMs, onEvent, onDone }) {
             const id = `anti_${Date.now()}_${Math.random().toString(16).slice(2)}`;
             current = { id, cueSide, tCue: 0, tTarget: 0, clicked: false, correct: false };
             phase = 'fix';
-            nextAt = performance.now() + (600 + Math.random() * 450);
+            nextAt = performance.now() + ((600 + Math.random() * 450) * 1.5);
             onEventRef.current('trial_start', { game: 3, trial_id: id, cueSide });
         };
         newTrial();
@@ -75,7 +75,7 @@ export default function Game3AntiTreasure({ durationMs, onEvent, onDone }) {
                 phase = 'cue';
                 current.tCue = t;
                 onEventRef.current('cue_on', { game: 3, trial_id: current.id, side: current.cueSide });
-                nextAt = t + 380;
+                nextAt = t + 570;
             }
             if (phase === 'cue' || phase === 'resp') {
                 const pos = current.cueSide === 'left' ? leftPos : rightPos;
@@ -89,7 +89,7 @@ export default function Game3AntiTreasure({ durationMs, onEvent, onDone }) {
                 const targetSide = current.cueSide === 'left' ? 'right' : 'left';
                 const p = targetSide === 'left' ? leftPos : rightPos;
                 onEventRef.current('target_on', { game: 3, trial_id: current.id, side: targetSide, x: p.x, y: p.y });
-                nextAt = t + 1200;
+                nextAt = t + 1800;
             }
             if (phase === 'resp') {
                 const targetSide = current.cueSide === 'left' ? 'right' : 'left';
