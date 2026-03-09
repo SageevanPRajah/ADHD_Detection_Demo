@@ -11,7 +11,21 @@ import Game5PursuitShip from './Game5PursuitShip';
 import { analyzeSession, downloadRunArtifactsUrl } from '../lib/api';
 
 function Header({ title }) {
-  return <h2 style={{ margin: '0 0 8px 0' }}>{title}</h2>;
+  return (
+    <h2 style={{
+      margin: '0 0 16px 0',
+      fontSize: '22px',
+      borderBottom: '1px solid rgba(255,255,255,0.1)',
+      paddingBottom: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      color: '#fff',
+      fontWeight: 800
+    }}>
+      {title}
+    </h2>
+  );
 }
 
 function makeLocalSessionId(participantId) {
@@ -430,7 +444,7 @@ export default function ChildEyeGame() {
                             const sc = result.score ?? 0;
                             if (sc < 4) return '#ef4444'; // Red
                             if (sc < 7) return '#eab308'; // Yellow
-                            return '#22c55e'; // Green
+                            return '#2563eb'; // Blue
                           })()}
                           strokeWidth="14"
                           strokeLinecap="round"
@@ -460,8 +474,8 @@ export default function ChildEyeGame() {
                               key={i}
                               className="segment"
                               style={{
-                                background: isActive ? '#22c55e' : '#1e2a46',
-                                boxShadow: isActive ? '0 0 8px rgba(34, 197, 94, 0.4)' : 'none'
+                                background: isActive ? '#2563eb' : '#1e2a46',
+                                boxShadow: isActive ? '0 0 8px rgba(37, 99, 235, 0.4)' : 'none'
                               }}
                             />
                           );
@@ -476,7 +490,7 @@ export default function ChildEyeGame() {
                     <div className="info-panel">
                       <div className="info-pill-item">
                         <span>Prediction</span>
-                        <span style={{ color: result.prediction === 'ADHD' ? '#ef4444' : '#22c55e' }}>
+                        <span style={{ color: result.prediction === 'ADHD' ? '#ef4444' : '#2563eb' }}>
                           {result.prediction || '-'}
                         </span>
                       </div>
@@ -538,19 +552,20 @@ export default function ChildEyeGame() {
 
   return (
     <div className="page">
-      <aside className="sidebar">
+      <aside className="sidebar" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <Header title="🎮 ADHD Eye Tasks" />
 
-        <div className="card">
-          <div style={{ fontWeight: 800, marginBottom: 8 }}>Participant</div>
-          <div className="row" style={{ marginBottom: 10 }}>
+        <div className="card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px' }}>
+          <div style={{ fontWeight: 800, marginBottom: 16, color: '#60a5fa', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Participant</div>
+          <div className="row" style={{ marginBottom: 12 }}>
             <input
               placeholder="User_ID / Participant ID"
               value={meta.participantId}
               onChange={e => setMeta(m => ({ ...m, participantId: e.target.value }))}
+              style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
           </div>
-          <div className="row" style={{ marginBottom: 10 }}>
+          <div className="row" style={{ marginBottom: 20 }}>
             <input
               type="number"
               min={3}
@@ -558,43 +573,76 @@ export default function ChildEyeGame() {
               placeholder="Child age"
               value={meta.age}
               onChange={e => setMeta(m => ({ ...m, age: Number(e.target.value) }))}
+              style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
           </div>
-          <div className="row">
+          <div className="row" style={{ marginBottom: localSessionId ? 16 : 0 }}>
             <button
               className="btn primary"
+              style={{
+                flex: 1,
+                padding: '14px',
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                border: 'none',
+                boxShadow: '0 8px 16px rgba(37,99,235,0.2)',
+                borderRadius: '12px',
+                fontSize: '15px'
+              }}
               onClick={startSessionFlow}
               disabled={sessionStatus === 'collecting' || sessionStatus === 'analyzing'}
             >
               Start Session
             </button>
-            <span className="pill">{sessionStatus}</span>
           </div>
+
+          {/* Status Indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: localSessionId ? 16 : 0, marginTop: 12 }}>
+            <span className="pill" style={{
+              background: sessionStatus === 'collecting' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+              color: sessionStatus === 'collecting' ? '#4ade80' : '#94a3b8',
+              border: sessionStatus === 'collecting' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)'
+            }}>{sessionStatus.toUpperCase()}</span>
+          </div>
+
           {localSessionId && (
-            <div style={{ marginTop: 8, fontSize: 12, opacity: .85 }}>
-              Local session: <span className="pill">{localSessionId}</span>
+            <div style={{ fontSize: 12, opacity: .9, display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <span style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Session ID</span>
+              <span style={{ color: '#e2e8f0', fontFamily: 'monospace', wordBreak: 'break-all' }}>{localSessionId}</span>
             </div>
           )}
         </div>
 
-        <div className="card" style={{ marginTop: 10 }}>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <div><strong>Controls</strong></div>
-            <div className="pill">Step: {step}</div>
+        <div className="card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px' }}>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ fontWeight: 800, color: '#60a5fa', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Controls</div>
+            <div className="pill" style={{ background: 'rgba(37,99,235,0.15)', color: '#93c5fd', border: '1px solid rgba(37,99,235,0.3)' }}>Step: {step}</div>
           </div>
-          <div className="row" style={{ marginTop: 10 }}>
-            <button className="btn ghost" onClick={() => setStep('calibration')} disabled={!canUseSessionControls}>Calibration</button>
-            <button className="btn ghost" onClick={() => gotoWithInstr('g1')} disabled={!canUseSessionControls}>Games</button>
+          <div className="row" style={{ gap: '12px' }}>
+            <button
+              className="btn ghost"
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              onClick={() => setStep('calibration')}
+              disabled={!canUseSessionControls}
+            >
+              Calibration
+            </button>
+            <button
+              className="btn ghost"
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              onClick={() => gotoWithInstr('g1')}
+              disabled={!canUseSessionControls}
+            >
+              Games
+            </button>
           </div>
-          <div className="row" style={{ marginTop: 10 }}>
-            <label className="row" style={{ gap: 8 }}>
-              <input type="checkbox" checked={eyeEnabled} onChange={e => setEyeEnabled(e.target.checked)} />
+
+          <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <label className="row" style={{ gap: 12, cursor: 'pointer', fontSize: '14px', color: eyeEnabled ? '#fff' : '#94a3b8', transition: 'color 0.2s' }}>
+              <input type="checkbox" checked={eyeEnabled} onChange={e => setEyeEnabled(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#2563eb', cursor: 'pointer' }} />
               Eye tracking ON
             </label>
-          </div>
-          <div className="row" style={{ marginTop: 8 }}>
-            <label className="row" style={{ gap: 8 }}>
-              <input type="checkbox" checked={showEyePreview} onChange={e => setShowEyePreview(e.target.checked)} />
+            <label className="row" style={{ gap: 12, cursor: 'pointer', fontSize: '14px', color: showEyePreview ? '#fff' : '#94a3b8', transition: 'color 0.2s' }}>
+              <input type="checkbox" checked={showEyePreview} onChange={e => setShowEyePreview(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#2563eb', cursor: 'pointer' }} />
               Show preview
             </label>
           </div>

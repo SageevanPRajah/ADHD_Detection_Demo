@@ -47,12 +47,12 @@ select::placeholder {
 }
 
 .btn.primary {
-  background: #22c55e;
+  background: #2563eb;
   color: #fff;
 }
 
 .btn.secondary {
-  background: #2563eb;
+  background: #1d4ed8;
   color: #fff;
 }
 
@@ -264,8 +264,8 @@ canvas.stage {
 .confidence-value {
   font-size: 22px;
   font-weight: 800;
-  color: #22c55e;
-  text-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+  color: #2563eb;
+  text-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
 }
 
 /* Info Pills Panel */
