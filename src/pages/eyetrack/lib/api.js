@@ -1,4 +1,5 @@
-const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || 'http://localhost:8000').replace(/\/$/, '');
+const EYE_API = `${API_BASE}/eye`;
 
 async function readErrorMessage(response) {
   try {
@@ -12,7 +13,7 @@ async function readErrorMessage(response) {
 }
 
 async function requestJson(path, options = {}) {
-  const response = await fetch(`${API}${path}`, {
+  const response = await fetch(`${EYE_API}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -40,7 +41,7 @@ export async function analyzeSession({ sessionMeta, events, gaze, calibration = 
 }
 
 export function downloadRunArtifactsUrl(runId) {
-  return `${API}/runs/${encodeURIComponent(runId)}/download`;
+  return `${EYE_API}/runs/${encodeURIComponent(runId)}/download`;
 }
 
 export async function getHealth() {

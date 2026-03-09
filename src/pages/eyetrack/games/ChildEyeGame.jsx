@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import EyeTrackerPanel from '../components/EyeTrackerPanel';
 import InstructionModal from '../components/InstructionModal';
 import Calibration from './Calibration';
@@ -10,7 +11,21 @@ import Game5PursuitShip from './Game5PursuitShip';
 import { analyzeSession, downloadRunArtifactsUrl } from '../lib/api';
 
 function Header({ title }) {
-  return <h2 style={{ margin: '0 0 8px 0' }}>{title}</h2>;
+  return (
+    <h2 style={{
+      margin: '0 0 16px 0',
+      fontSize: '22px',
+      borderBottom: '1px solid rgba(255,255,255,0.1)',
+      paddingBottom: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      color: '#fff',
+      fontWeight: 800
+    }}>
+      {title}
+    </h2>
+  );
 }
 
 function makeLocalSessionId(participantId) {
@@ -19,7 +34,8 @@ function makeLocalSessionId(participantId) {
 }
 
 export default function ChildEyeGame() {
-  const [meta, setMeta] = useState({ participantId: '', age: 8, condition: 'Unsure' });
+  const navigate = useNavigate();
+  const [meta, setMeta] = useState({ participantId: 'UID001', age: 8, condition: 'Unsure' });
   const [localSessionId, setLocalSessionId] = useState('');
   const [sessionStatus, setSessionStatus] = useState('idle');
   const [eyeEnabled, setEyeEnabled] = useState(true);
@@ -223,19 +239,82 @@ export default function ChildEyeGame() {
   const renderStage = () => {
     if (step === 'consent') {
       return (
-        <div style={{ padding: 16 }}>
-          <div className="card" style={{ maxWidth: 860 }}>
-            <h2 style={{ marginTop: 0 }}>Consent & Setup</h2>
-            <p style={{ opacity: .9 }}>
+        <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
+          <div
+            className="card"
+            style={{
+              maxWidth: 940,
+              width: '100%',
+              border: '1px solid rgba(30, 42, 70, 0.25)',
+              background: 'linear-gradient(140deg, rgba(30,42,70,0.06), rgba(255,255,255,0.96))',
+            }}
+          >
+            <h2 style={{ marginTop: 0, marginBottom: 8 }}>Consent & Setup</h2>
+            <p style={{ opacity: 0.9, marginBottom: 14 }}>
               This research task uses the webcam to estimate gaze during the tasks.
               Please ensure guardian consent and child assent before starting.
             </p>
-            <ul style={{ opacity: .9 }}>
-              <li>Good lighting (no bright backlight)</li>
-              <li>Face centered, ~50–70cm from camera</li>
-              <li>Try not to move chair during tasks</li>
-            </ul>
-            <button className="btn primary" onClick={() => setStep('calibration')}>I Understand</button>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              <div
+                style={{
+                  border: '1px solid rgba(30, 42, 70, 0.2)',
+                  borderRadius: 12,
+                  padding: 12,
+                  background: 'rgba(255, 255, 255, 0.9)',
+                }}
+              >
+                <div className="pill" style={{ marginBottom: 8 }}>English</div>
+                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#334155' }}>
+                  <li>Good lighting (no bright backlight)</li>
+                  <li>Face centered, ~50-70cm from camera</li>
+                  <li>Try not to move chair during tasks</li>
+                </ul>
+              </div>
+
+              <div
+                style={{
+                  border: '1px solid rgba(30, 42, 70, 0.2)',
+                  borderRadius: 12,
+                  padding: 12,
+                  background: 'rgba(255, 255, 255, 0.9)',
+                }}
+              >
+                <div className="pill" style={{ marginBottom: 8 }}>Sinhala</div>
+                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#334155' }}>
+                  <li>හොඳ ආලෝකය තිබෙන්න (පිටුපසින් තද ආලෝකය නැතිව)</li>
+                  <li>මුහුණ මැදින් තබාගෙන, කැමරාවෙන් සෙ.මී. 50-70 පමණ දුරින් ඉන්න</li>
+                  <li>කාර්ය අතරතුර පුටුව අඩු ලෙස සෙලවීමට උත්සාහ කරන්න</li>
+                </ul>
+              </div>
+
+              <div
+                style={{
+                  border: '1px solid rgba(30, 42, 70, 0.2)',
+                  borderRadius: 12,
+                  padding: 12,
+                  background: 'rgba(255, 255, 255, 0.9)',
+                }}
+              >
+                <div className="pill" style={{ marginBottom: 8 }}>Tamil</div>
+                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#334155' }}>
+                  <li>நல்ல ஒளி இருக்க வேண்டும் (பின்புறம் அதிக ஒளி இருக்கக்கூடாது)</li>
+                  <li>முகம் நடுப்பகுதியில் இருக்கவும், கேமராவிலிருந்து சுமார் 50-70 செ.மீ. தூரம் வைத்திருக்கவும்</li>
+                  <li>பணிகள் நடக்கும் போது நாற்காலியை அதிகம் நகர்க்காமல் இருக்க முயற்சிக்கவும்</li>
+                </ul>
+              </div>
+            </div>
+
+            <button className="btn primary" onClick={() => setStep('calibration')}>
+              I Understand
+            </button>
           </div>
         </div>
       );
@@ -300,41 +379,136 @@ export default function ChildEyeGame() {
     if (step === 'finish') {
       const result = analysisState.result;
       return (
-        <div style={{ padding: 16 }}>
-          <div className="card" style={{ maxWidth: 820 }}>
-            <h2 style={{ marginTop: 0 }}>Finished ✅</h2>
-            <p style={{ opacity: .9 }}>
+        <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
+          <div className="card result-shell" style={{ maxWidth: 980, width: '100%' }}>
+            <div className="result-shell-head">
+              <h2 style={{ marginTop: 0, marginBottom: 6, color: '#1e293b' }}>Finished</h2>
+              <span className="pill" style={{ fontWeight: 800 }}>Session Complete</span>
+            </div>
+            <p style={{ opacity: 0.9, marginBottom: 14, color: '#334155' }}>
               Session data has been collected and sent to the backend for final model inference.
             </p>
 
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
-              <span className="pill">Events: {eventsRef.current.length}</span>
-              <span className="pill">Gaze samples: {gazeRef.current.length}</span>
-              <span className="pill">Calibration samples: {calibrationRef.current.length}</span>
-              {analysisState.runId && <span className="pill">Run: {analysisState.runId}</span>}
+            <div className="result-top-stats">
+              <div className="result-top-stat">
+                <span>Events</span>
+                <strong>{eventsRef.current.length}</strong>
+              </div>
+              <div className="result-top-stat">
+                <span>Gaze samples</span>
+                <strong>{gazeRef.current.length}</strong>
+              </div>
+              <div className="result-top-stat">
+                <span>Calibration samples</span>
+                <strong>{calibrationRef.current.length}</strong>
+              </div>
+              {analysisState.runId && (
+                <div className="result-top-stat">
+                  <span>Run ID</span>
+                  <strong>{analysisState.runId}</strong>
+                </div>
+              )}
             </div>
 
             {analysisState.status === 'running' && (
-              <div style={{ opacity: .9 }}>
-                Backend is generating task features and running the trained model...
+              <div className="result-processing-box">
+                <div className="result-processing-title">Analyzing Session Data</div>
+                <div style={{ opacity: 0.92 }}>
+                  Backend is generating task features and running the trained model.
+                </div>
               </div>
             )}
 
             {analysisState.status === 'success' && result && (
               <div>
-                <div className="card" style={{ marginTop: 12, background: 'rgba(255,255,255,0.03)' }}>
-                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Model Result</div>
-                  <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
-                    <span className="pill">Prediction: {result.prediction}</span>
-                    <span className="pill">Confidence: {typeof result.confidence === 'number' ? `${(result.confidence * 100).toFixed(1)}%` : '-'}</span>
-                    <span className="pill">Score: {result.score ?? '-'}/10</span>
-                    <span className="pill">Severity: {result.severity || '-'}</span>
+                <div className="result-dashboard">
+                  <div className="result-header">
+                    <span style={{ fontSize: '24px' }}>📊</span> Assessment Results
+                  </div>
+
+                  <div className="result-metrics">
+                    {/* Score Gauge Meter */}
+                    <div className="score-gauge-wrapper">
+                      <svg width="150" height="85" viewBox="0 0 150 85">
+                        <path
+                          d="M 10 80 A 65 65 0 0 1 140 80"
+                          fill="none"
+                          stroke="#1e2a46"
+                          strokeWidth="14"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M 10 80 A 65 65 0 0 1 140 80"
+                          fill="none"
+                          stroke={(() => {
+                            const sc = result.score ?? 0;
+                            if (sc < 4) return '#ef4444'; // Red
+                            if (sc < 7) return '#eab308'; // Yellow
+                            return '#2563eb'; // Blue
+                          })()}
+                          strokeWidth="14"
+                          strokeLinecap="round"
+                          strokeDasharray="204.2"
+                          strokeDashoffset={204.2 * (1 - ((result.score ?? 0) / 10))}
+                          style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
+                        />
+                      </svg>
+                      <div className="score-gauge-value">
+                        {result.score ?? '-'}/10
+                      </div>
+                      <div className="score-gauge-label">
+                        SCORE
+                      </div>
+                    </div>
+
+                    {/* Confidence Segments Bar */}
+                    <div className="confidence-wrapper">
+                      <div className="confidence-label">CONFIDENCE</div>
+                      <div className="confidence-segments">
+                        {Array.from({ length: 14 }).map((_, i) => {
+                          const conf = typeof result.confidence === 'number' ? result.confidence : 0;
+                          const activeSegments = Math.round(conf * 14);
+                          const isActive = i < activeSegments;
+                          return (
+                            <div
+                              key={i}
+                              className="segment"
+                              style={{
+                                background: isActive ? '#2563eb' : '#1e2a46',
+                                boxShadow: isActive ? '0 0 8px rgba(37, 99, 235, 0.4)' : 'none'
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                      <div className="confidence-value">
+                        {typeof result.confidence === 'number' ? `${(result.confidence * 100).toFixed(1)}%` : '-'}
+                      </div>
+                    </div>
+
+                    {/* Info Pills */}
+                    <div className="info-panel">
+                      <div className="info-pill-item">
+                        <span>Prediction</span>
+                        <span style={{ color: result.prediction === 'ADHD' ? '#ef4444' : '#2563eb' }}>
+                          {result.prediction || '-'}
+                        </span>
+                      </div>
+                      <div className="info-pill-item">
+                        <span>Severity</span>
+                        <span style={{ color: '#eab308' }}>
+                          {result.severity || '-'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   {Array.isArray(result.warnings) && result.warnings.length > 0 && (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 6 }}>Warnings</div>
-                      <ul style={{ margin: 0, paddingLeft: 18, opacity: .9 }}>
+                    <div className="warnings-box">
+                      <div className="warnings-title">
+                        <span style={{ fontSize: '16px' }}>⚠️</span> System Warnings
+                      </div>
+                      <ul className="warnings-list">
                         {result.warnings.map((warning, idx) => (
                           <li key={`${warning}_${idx}`}>{warning}</li>
                         ))}
@@ -343,25 +517,26 @@ export default function ChildEyeGame() {
                   )}
                 </div>
 
-                <div className="row" style={{ marginTop: 14, gap: 10, flexWrap: 'wrap' }}>
+                <div className="row result-action-row" style={{ marginTop: 14, gap: 10, flexWrap: 'wrap' }}>
                   {runDownloadUrl && (
                     <a className="btn primary" href={runDownloadUrl} target="_blank" rel="noreferrer">
                       Download Run Artifacts
                     </a>
                   )}
                   <button className="btn ghost" onClick={startSessionFlow}>Start New Session</button>
+                  <button className="btn ghost" onClick={() => navigate('/eyetrack/terms')} style={{ border: '1px solid #1e2a46' }}>Return to Landing</button>
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 12, opacity: .85 }}>
+                <div className="result-footnote">
                   Summary feature columns generated: {analysisState.summaryFeatureColumns.length}
                 </div>
               </div>
             )}
 
             {analysisState.status === 'error' && (
-              <div>
-                <div style={{ color: '#fca5a5', fontWeight: 700, marginTop: 10 }}>Backend analysis failed</div>
-                <div style={{ marginTop: 6, opacity: .9 }}>{analysisState.error}</div>
+              <div className="result-error-box">
+                <div className="result-error-title">Backend analysis failed</div>
+                <div style={{ marginTop: 6, opacity: 0.9 }}>{analysisState.error}</div>
                 <div className="row" style={{ marginTop: 14, gap: 10, flexWrap: 'wrap' }}>
                   <button className="btn ghost" onClick={startSessionFlow}>Try Again</button>
                 </div>
@@ -377,19 +552,20 @@ export default function ChildEyeGame() {
 
   return (
     <div className="page">
-      <aside className="sidebar">
-        <Header title="🎮 ADHD Eye Tasks (Final)" />
+      <aside className="sidebar" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <Header title="🎮 ADHD Eye Tasks" />
 
-        <div className="card">
-          <div style={{ fontWeight: 800, marginBottom: 8 }}>Participant</div>
-          <div className="row" style={{ marginBottom: 10 }}>
+        <div className="card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px' }}>
+          <div style={{ fontWeight: 800, marginBottom: 16, color: '#60a5fa', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Participant</div>
+          <div className="row" style={{ marginBottom: 12 }}>
             <input
               placeholder="User_ID / Participant ID"
               value={meta.participantId}
               onChange={e => setMeta(m => ({ ...m, participantId: e.target.value }))}
+              style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
           </div>
-          <div className="row" style={{ marginBottom: 10 }}>
+          <div className="row" style={{ marginBottom: 20 }}>
             <input
               type="number"
               min={3}
@@ -397,55 +573,82 @@ export default function ChildEyeGame() {
               placeholder="Child age"
               value={meta.age}
               onChange={e => setMeta(m => ({ ...m, age: Number(e.target.value) }))}
+              style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
           </div>
-          <div className="row">
+          <div className="row" style={{ marginBottom: localSessionId ? 16 : 0 }}>
             <button
               className="btn primary"
+              style={{
+                flex: 1,
+                padding: '14px',
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                border: 'none',
+                boxShadow: '0 8px 16px rgba(37,99,235,0.2)',
+                borderRadius: '12px',
+                fontSize: '15px'
+              }}
               onClick={startSessionFlow}
               disabled={sessionStatus === 'collecting' || sessionStatus === 'analyzing'}
             >
               Start Session
             </button>
-            <span className="pill">{sessionStatus}</span>
           </div>
+
+          {/* Status Indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: localSessionId ? 16 : 0, marginTop: 12 }}>
+            <span className="pill" style={{
+              background: sessionStatus === 'collecting' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+              color: sessionStatus === 'collecting' ? '#4ade80' : '#94a3b8',
+              border: sessionStatus === 'collecting' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)'
+            }}>{sessionStatus.toUpperCase()}</span>
+          </div>
+
           {localSessionId && (
-            <div style={{ marginTop: 8, fontSize: 12, opacity: .85 }}>
-              Local session: <span className="pill">{localSessionId}</span>
+            <div style={{ fontSize: 12, opacity: .9, display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <span style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Session ID</span>
+              <span style={{ color: '#e2e8f0', fontFamily: 'monospace', wordBreak: 'break-all' }}>{localSessionId}</span>
             </div>
           )}
         </div>
 
-        <div className="card" style={{ marginTop: 10 }}>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <div><strong>Controls</strong></div>
-            <div className="pill">Step: {step}</div>
+        <div className="card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px' }}>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ fontWeight: 800, color: '#60a5fa', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Controls</div>
+            <div className="pill" style={{ background: 'rgba(37,99,235,0.15)', color: '#93c5fd', border: '1px solid rgba(37,99,235,0.3)' }}>Step: {step}</div>
           </div>
-          <div className="row" style={{ marginTop: 10 }}>
-            <button className="btn ghost" onClick={() => setStep('calibration')} disabled={!canUseSessionControls}>Calibration</button>
-            <button className="btn ghost" onClick={() => gotoWithInstr('g1')} disabled={!canUseSessionControls}>Games</button>
+          <div className="row" style={{ gap: '12px' }}>
+            <button
+              className="btn ghost"
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              onClick={() => setStep('calibration')}
+              disabled={!canUseSessionControls}
+            >
+              Calibration
+            </button>
+            <button
+              className="btn ghost"
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              onClick={() => gotoWithInstr('g1')}
+              disabled={!canUseSessionControls}
+            >
+              Games
+            </button>
           </div>
-          <div className="row" style={{ marginTop: 10 }}>
-            <label className="row" style={{ gap: 8 }}>
-              <input type="checkbox" checked={eyeEnabled} onChange={e => setEyeEnabled(e.target.checked)} />
+
+          <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <label className="row" style={{ gap: 12, cursor: 'pointer', fontSize: '14px', color: eyeEnabled ? '#fff' : '#94a3b8', transition: 'color 0.2s' }}>
+              <input type="checkbox" checked={eyeEnabled} onChange={e => setEyeEnabled(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#2563eb', cursor: 'pointer' }} />
               Eye tracking ON
             </label>
-          </div>
-          <div className="row" style={{ marginTop: 8 }}>
-            <label className="row" style={{ gap: 8 }}>
-              <input type="checkbox" checked={showEyePreview} onChange={e => setShowEyePreview(e.target.checked)} />
+            <label className="row" style={{ gap: 12, cursor: 'pointer', fontSize: '14px', color: showEyePreview ? '#fff' : '#94a3b8', transition: 'color 0.2s' }}>
+              <input type="checkbox" checked={showEyePreview} onChange={e => setShowEyePreview(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#2563eb', cursor: 'pointer' }} />
               Show preview
             </label>
           </div>
         </div>
 
-        <div className="card" style={{ marginTop: 10, fontSize: 12, opacity: .85 }}>
-          <div><strong>Flow</strong></div>
-          <div style={{ marginTop: 6 }}>
-            Frontend stores events, gaze, and calibration locally during play.
-            After Game 5 ends, everything is sent once to the backend for feature generation and model inference.
-          </div>
-        </div>
+
 
         <div style={{ marginTop: 10 }}>
           {eyeEnabled && (

@@ -14,7 +14,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { predictFromJSON } from "../../handwriting util/api.js";
+import { predictFromJSON, analyzeHandwritingSession } from "../../handwriting util/api.js";
 import { useTranslation } from "react-i18next";
 
 /* ===================== DATA ===================== */
@@ -499,19 +499,7 @@ export default function HandwritingGame() {
     setShowResultScreen(true);
 
     try {
-      const response = await fetch("http://localhost:8000/handwriting/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(sessionJSON)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await analyzeHandwritingSession(sessionJSON);
       setCurrentPrediction(data);
     } catch (err) {
       setCurrentPrediction({ error: true, message: err.message });
