@@ -245,12 +245,13 @@ export default function ChildEyeGame() {
             style={{
               maxWidth: 940,
               width: '100%',
-              border: '1px solid rgba(30, 42, 70, 0.25)',
-              background: 'linear-gradient(140deg, rgba(30,42,70,0.06), rgba(255,255,255,0.96))',
+              border: '1px solid rgba(37, 99, 235, 0.2)',
+              background: 'linear-gradient(145deg, #0F1A33 0%, #0b132b 100%)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
             }}
           >
-            <h2 style={{ marginTop: 0, marginBottom: 8 }}>Consent & Setup</h2>
-            <p style={{ opacity: 0.9, marginBottom: 14 }}>
+            <h2 style={{ marginTop: 0, marginBottom: 8, color: '#fff' }}>Consent & Setup</h2>
+            <p style={{ opacity: 0.9, marginBottom: 14, color: '#E2E8F0' }}>
               This research task uses the webcam to estimate gaze during the tasks.
               Please ensure guardian consent and child assent before starting.
             </p>
@@ -265,14 +266,14 @@ export default function ChildEyeGame() {
             >
               <div
                 style={{
-                  border: '1px solid rgba(30, 42, 70, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
                   borderRadius: 12,
                   padding: 12,
-                  background: 'rgba(255, 255, 255, 0.9)',
+                  background: 'rgba(0,0,0,0.3)',
                 }}
               >
-                <div className="pill" style={{ marginBottom: 8 }}>English</div>
-                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#334155' }}>
+                <div className="pill" style={{ marginBottom: 8, background: '#2563EB', color: '#fff', border: 'none' }}>English</div>
+                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#E2E8F0' }}>
                   <li>Good lighting (no bright backlight)</li>
                   <li>Face centered, ~50-70cm from camera</li>
                   <li>Try not to move chair during tasks</li>
@@ -281,14 +282,14 @@ export default function ChildEyeGame() {
 
               <div
                 style={{
-                  border: '1px solid rgba(30, 42, 70, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
                   borderRadius: 12,
                   padding: 12,
-                  background: 'rgba(255, 255, 255, 0.9)',
+                  background: 'rgba(0,0,0,0.3)',
                 }}
               >
-                <div className="pill" style={{ marginBottom: 8 }}>Sinhala</div>
-                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#334155' }}>
+                <div className="pill" style={{ marginBottom: 8, background: '#2563EB', color: '#fff', border: 'none' }}>Sinhala</div>
+                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#E2E8F0' }}>
                   <li>හොඳ ආලෝකය තිබෙන්න (පිටුපසින් තද ආලෝකය නැතිව)</li>
                   <li>මුහුණ මැදින් තබාගෙන, කැමරාවෙන් සෙ.මී. 50-70 පමණ දුරින් ඉන්න</li>
                   <li>කාර්ය අතරතුර පුටුව අඩු ලෙස සෙලවීමට උත්සාහ කරන්න</li>
@@ -297,14 +298,14 @@ export default function ChildEyeGame() {
 
               <div
                 style={{
-                  border: '1px solid rgba(30, 42, 70, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
                   borderRadius: 12,
                   padding: 12,
-                  background: 'rgba(255, 255, 255, 0.9)',
+                  background: 'rgba(0,0,0,0.3)',
                 }}
               >
-                <div className="pill" style={{ marginBottom: 8 }}>Tamil</div>
-                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#334155' }}>
+                <div className="pill" style={{ marginBottom: 8, background: '#2563EB', color: '#fff', border: 'none' }}>Tamil</div>
+                <ul style={{ opacity: 0.92, margin: 0, paddingLeft: 18, lineHeight: 1.6, color: '#E2E8F0' }}>
                   <li>நல்ல ஒளி இருக்க வேண்டும் (பின்புறம் அதிக ஒளி இருக்கக்கூடாது)</li>
                   <li>முகம் நடுப்பகுதியில் இருக்கவும், கேமராவிலிருந்து சுமார் 50-70 செ.மீ. தூரம் வைத்திருக்கவும்</li>
                   <li>பணிகள் நடக்கும் போது நாற்காலியை அதிகம் நகர்க்காமல் இருக்க முயற்சிக்கவும்</li>
@@ -380,12 +381,18 @@ export default function ChildEyeGame() {
       const result = analysisState.result;
       return (
         <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
-          <div className="card result-shell" style={{ maxWidth: 980, width: '100%' }}>
+          <div className="card result-shell" style={{
+            maxWidth: 980,
+            width: '100%',
+            background: 'linear-gradient(145deg, #0F1A33 0%, #0b132b 100%)',
+            border: '1px solid rgba(37, 99, 235, 0.2)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+          }}>
             <div className="result-shell-head">
-              <h2 style={{ marginTop: 0, marginBottom: 6, color: '#1e293b' }}>Finished</h2>
-              <span className="pill" style={{ fontWeight: 800 }}>Session Complete</span>
+              <h2 style={{ marginTop: 0, marginBottom: 6, color: '#fff' }}>Finished</h2>
+              <span className="pill" style={{ fontWeight: 800, background: '#2563EB', color: '#fff', border: 'none' }}>Session Complete</span>
             </div>
-            <p style={{ opacity: 0.9, marginBottom: 14, color: '#334155' }}>
+            <p style={{ opacity: 0.9, marginBottom: 14, color: '#E2E8F0' }}>
               Session data has been collected and sent to the backend for final model inference.
             </p>
 
