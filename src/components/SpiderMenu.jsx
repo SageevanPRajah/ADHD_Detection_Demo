@@ -1,50 +1,47 @@
 import React from "react";
 import { LogIn, User, UserCog, UserPlus, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const legButtons = [
-  {
-    id: "doctor",
-    label: "Doctor Login",
-    icon: UserCog,
-    accent: "bg-clinic-primary",
-    // slightly down from top, closer to center
-    position: "top-8 left-1/2 -translate-x-1/2 -translate-y-full",
-    // panel appears between button and center
-    panelPosition: "left-1/2 -translate-x-1/2 top-16"
-  },
-  {
-    id: "parent",
-    label: "Parent Login",
-    icon: User,
-    accent: "bg-clinic-secondary",
-    position: "left-2 top-1/2 -translate-y-1/2 -translate-x-full",
-    // panel pulled towards center (to the right of button)
-    panelPosition: "left-16 top-1/2 -translate-y-1/2"
-  },
-  {
-    id: "guest",
-    label: "Guest Login",
-    icon: UserPlus,
-    accent: "bg-clinic-accent",
-    position: "bottom-8 left-1/2 -translate-x-1/2 translate-y-full",
-    // panel above bottom button, towards center
-    panelPosition: "left-1/2 -translate-x-1/2 bottom-16"
-  },
-  {
-    id: "admin",
-    label: "Admin Login",
-    icon: Shield,
-    accent: "bg-indigo-500",
-    position: "right-2 top-1/2 -translate-y-1/2 translate-x-full",
-    // panel pulled towards center (to the left of button)
-    panelPosition: "right-16 top-1/2 -translate-y-1/2"
-  }
-];
+import { useTranslation } from "react-i18next";
 
 const SpiderMenu = () => {
   const [active, setActive] = React.useState(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const legButtons = [
+    {
+      id: "doctor",
+      labelKey: "spider.doctorLogin",
+      icon: UserCog,
+      accent: "bg-clinic-primary",
+      position: "top-8 left-1/2 -translate-x-1/2 -translate-y-full",
+      panelPosition: "left-1/2 -translate-x-1/2 top-16"
+    },
+    {
+      id: "parent",
+      labelKey: "spider.parentLogin",
+      icon: User,
+      accent: "bg-clinic-secondary",
+      position: "left-2 top-1/2 -translate-y-1/2 -translate-x-full",
+      panelPosition: "left-16 top-1/2 -translate-y-1/2"
+    },
+    {
+      id: "guest",
+      labelKey: "spider.guestLogin",
+      icon: UserPlus,
+      accent: "bg-clinic-accent",
+      position: "bottom-8 left-1/2 -translate-x-1/2 translate-y-full",
+      panelPosition: "left-1/2 -translate-x-1/2 bottom-16"
+    },
+    {
+      id: "admin",
+      labelKey: "spider.adminLogin",
+      icon: Shield,
+      accent: "bg-indigo-500",
+      position: "right-2 top-1/2 -translate-y-1/2 translate-x-full",
+      panelPosition: "right-16 top-1/2 -translate-y-1/2"
+    }
+  ];
 
   const handleLogin = (rolePath) => {
     navigate(`/${rolePath}`);
@@ -55,24 +52,22 @@ const SpiderMenu = () => {
       {/* tagline */}
       <section className="flex-1 space-y-4">
         <p className="inline-flex rounded-full bg-clinic-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-clinic-primary">
-          Calm Clinic Mode
+          {t("spider.calmClinic")}
         </p>
 
         <h1 className="text-3xl font-bold tracking-tight text-clinic-textDark sm:text-4xl">
-          ADHD screening hub for{" "}
-          <span className="text-clinic-primary">children</span> & families.
+          {t("spider.heading")}{" "}
+          <span className="text-clinic-primary">{t("spider.children")}</span> {t("spider.andFamilies")}
         </h1>
 
         <p className="text-sm leading-relaxed text-slate-300">
-          One portal for doctors, parents and admins. Start from the role that
-          matches you and explore tailored dashboards, progress tracking and
-          child-friendly assessments.
+          {t("spider.tagline")}
         </p>
 
         <ul className="mt-2 space-y-1 text-xs text-slate-400">
-          <li>• Evidence-based screening workflow</li>
-          <li>• Separate access for doctors, parents and school staff</li>
-          <li>• Guest mode for demo and training</li>
+          <li>• {t("spider.evidence")}</li>
+          <li>• {t("spider.separateAccess")}</li>
+          <li>• {t("spider.guestMode")}</li>
         </ul>
       </section>
 
@@ -82,13 +77,13 @@ const SpiderMenu = () => {
           {/* spider body */}
           <div className="absolute left-1/2 top-1/2 flex h-40 w-40 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-3xl bg-clinic-surfaceDark shadow-2xl shadow-black/50">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
-              Single Portal
+              {t("spider.singlePortal")}
             </p>
             <p className="mt-1 text-4xl font-black tracking-[0.3em] text-clinic-primary">
               ADHD
             </p>
             <p className="mt-2 px-4 text-center text-[11px] text-slate-300">
-              Choose a leg to continue with your role.
+              {t("spider.chooseLeg")}
             </p>
           </div>
 
@@ -108,9 +103,8 @@ const SpiderMenu = () => {
             return (
               <div
                 key={leg.id}
-                className={`absolute ${leg.position} ${
-                  leg.id === "guest" ? "z-10" : "z-20"
-                }`}
+                className={`absolute ${leg.position} ${leg.id === "guest" ? "z-10" : "z-20"
+                  }`}
                 onMouseEnter={() => setActive(leg.id)}
                 onMouseLeave={() => setActive(null)}
               >
@@ -122,14 +116,14 @@ const SpiderMenu = () => {
                 >
                   <Icon className="h-6 w-6" />
                   <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-medium text-slate-200">
-                    {leg.label}
+                    {t(leg.labelKey)}
                   </span>
                 </button>
 
                 {/* hover panel */}
                 {isActive && (
                   <div
-                    className={`absolute z-30 w-64 rounded-2xl border border-slate-700 bg-clinic-surfaceDark/95 p-4 text-xs shadow-2xl shadow-black/60 ${leg.panelPosition}`}
+                    className={`absolute z-30 w-72 rounded-3xl border border-white/10 bg-black/60 backdrop-blur-xl p-6 shadow-2xl shadow-black/80 animate-[fadeIn_0.2s_ease-out] ${leg.panelPosition}`}
                   >
                     <LoginPanel id={leg.id} onLogin={handleLogin} />
                   </div>
@@ -147,29 +141,30 @@ export default SpiderMenu;
 
 /* Shared field style */
 const fieldBase =
-  "w-full rounded-lg border border-slate-600 bg-slate-900/40 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-clinic-primary";
+  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-clinic-primary/50 focus:bg-white/10 transition-all";
 
 /* Split into sub-components so hooks are safe */
 
 const DoctorLoginPanel = ({ onLogin }) => {
   const [showApply, setShowApply] = React.useState(false);
+  const { t } = useTranslation();
 
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold text-clinic-primary">
-        Doctor Access
+      <p className="mb-4 text-xs font-bold text-clinic-primary flex items-center gap-2">
+        <UserCog className="w-4 h-4" /> {t("spider.doctorAccess")}
       </p>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <input
           className={fieldBase}
-          placeholder="Doctor ID (assigned by Admin)"
+          placeholder={t("spider.doctorIdPlaceholder")}
         />
-        <input type="password" className={fieldBase} placeholder="Password" />
+        <input type="password" className={fieldBase} placeholder={t("spider.password")} />
         <button
-          className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-clinic-primary px-3 py-2 text-xs font-semibold text-white"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-clinic-primary px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-primary/20 hover:bg-white hover:text-clinic-primary transition-all"
           onClick={() => onLogin("doctor")}
         >
-          <LogIn className="h-3 w-3" /> Login
+          <LogIn className="h-4 w-4" /> {t("spider.login")}
         </button>
       </div>
 
@@ -179,24 +174,23 @@ const DoctorLoginPanel = ({ onLogin }) => {
         className="mt-2 w-full text-[10px] font-medium text-clinic-primary hover:underline"
         onClick={() => setShowApply((v) => !v)}
       >
-        {showApply ? "Hide application form" : "Apply as Doctor"}
+        {showApply ? t("spider.hideAppForm") : t("spider.applyAsDoctor")}
       </button>
 
       {showApply && (
         <div className="mt-3 border-t border-slate-700 pt-2">
           <p className="mb-1 text-[11px] font-semibold text-slate-200">
-            Doctor Application
+            {t("spider.doctorApplication")}
           </p>
           <p className="mb-1 text-[10px] text-slate-400">
-            Submit your details & registration ID. Admin will verify and create
-            your Doctor ID.
+            {t("spider.doctorAppDesc")}
           </p>
           <div className="space-y-2">
-            <input className={fieldBase} placeholder="Full Name" />
-            <input className={fieldBase} placeholder="Medical Council ID" />
+            <input className={fieldBase} placeholder={t("spider.fullName")} />
+            <input className={fieldBase} placeholder={t("spider.medicalCouncilId")} />
             <input type="file" className="w-full text-[10px] text-slate-300" />
             <button className="w-full rounded-lg border border-clinic-primary/60 bg-clinic-primary/10 px-3 py-2 text-[11px] font-semibold text-clinic-primary">
-              Submit Application
+              {t("spider.submitApplication")}
             </button>
           </div>
         </div>
@@ -205,81 +199,84 @@ const DoctorLoginPanel = ({ onLogin }) => {
   );
 };
 
-const ParentLoginPanel = ({ onLogin }) => (
-  <div>
-    <p className="mb-2 text-[11px] font-semibold text-clinic-secondary">
-      Parent Access
-    </p>
-    <p className="mb-2 text-[10px] text-slate-400">
-      Parent account is created by your child&apos;s doctor. Use your Parent ID
-      & password.
-    </p>
-    <div className="space-y-2">
-      <input className={fieldBase} placeholder="Parent ID" />
-      <input type="password" className={fieldBase} placeholder="Password" />
-      <button
-        className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-clinic-secondary px-3 py-2 text-xs font-semibold text-slate-900"
-        onClick={() => onLogin("parent")}
-      >
-        <LogIn className="h-3 w-3" /> Login
-      </button>
+const ParentLoginPanel = ({ onLogin }) => {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <p className="mb-1 text-xs font-bold text-clinic-secondary flex items-center gap-2">
+        <User className="w-4 h-4" /> {t("spider.parentAccess")}
+      </p>
+      <p className="mb-4 text-[10px] text-slate-400">
+        {t("spider.parentAccessDesc")}
+      </p>
+      <div className="space-y-3">
+        <input className={fieldBase} placeholder={t("spider.parentIdPlaceholder")} />
+        <input type="password" className={fieldBase} placeholder={t("spider.password")} />
+        <button
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-clinic-secondary px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-secondary/20 hover:bg-white hover:text-clinic-secondary transition-all"
+          onClick={() => onLogin("parent")}
+        >
+          <LogIn className="h-4 w-4" /> {t("spider.login")}
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const GuestLoginPanel = ({ onLogin }) => {
   const [mode, setMode] = React.useState("login");
+  const { t } = useTranslation();
 
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold text-clinic-accent">
-        Guest {mode === "login" ? "Login" : "Signup"}
+      <p className="mb-1 text-xs font-bold text-clinic-accent flex items-center gap-2">
+        <UserPlus className="w-4 h-4" /> {mode === "login" ? t("spider.guestLoginLabel") : t("spider.guestSignupLabel")}
       </p>
 
       {mode === "login" ? (
         <>
-          <p className="mb-2 text-[10px] text-slate-400">
-            Explore the portal in demo mode. No child data is stored.
+          <p className="mb-4 text-[10px] text-slate-400">
+            {t("spider.guestDesc")}
           </p>
-          <div className="space-y-2">
-            <input className={fieldBase} placeholder="Email" />
-            <input type="password" className={fieldBase} placeholder="Password" />
+          <div className="space-y-3">
+            <input className={fieldBase} placeholder={t("spider.email")} />
+            <input type="password" className={fieldBase} placeholder={t("spider.password")} />
             <button
-              className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-clinic-accent px-3 py-2 text-xs font-semibold text-slate-900"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-clinic-accent px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-accent/20 hover:bg-white hover:text-clinic-accent transition-all"
               onClick={() => onLogin("guest")}
             >
-              <LogIn className="h-3 w-3" /> Login
+              <LogIn className="h-4 w-4" /> {t("spider.login")}
             </button>
           </div>
           <button
             className="mt-2 w-full text-[10px] font-medium text-clinic-accent hover:underline"
             onClick={() => setMode("signup")}
           >
-            New here? Register as Guest
+            {t("spider.newHere")}
           </button>
         </>
       ) : (
         <>
-          <div className="space-y-2">
-            <input className={fieldBase} placeholder="Full Name" />
-            <input className={fieldBase} placeholder="Email" />
+          <div className="space-y-3 mt-3">
+            <input className={fieldBase} placeholder={t("spider.fullName")} />
+            <input className={fieldBase} placeholder={t("spider.email")} />
             <input
               type="password"
               className={fieldBase}
-              placeholder="Create Password"
+              placeholder={t("spider.createPassword")}
             />
-            <button className="flex w-full items-center justify-center gap-1 rounded-lg border border-slate-600 bg-slate-900/40 px-3 py-2 text-[11px] font-medium text-slate-100">
-              <span className="text-lg">G</span> Continue with Google
+            <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors px-4 py-2 text-[11px] font-bold text-white">
+              <span className="text-lg">G</span> {t("spider.continueGoogle")}
             </button>
-            <button className="w-full rounded-lg bg-clinic-accent px-3 py-2 text-xs font-semibold text-slate-900">
-              Create Guest Account
+            <button className="w-full rounded-xl bg-clinic-accent px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg shadow-clinic-accent/20 hover:bg-white hover:text-clinic-accent transition-all mt-1">
+              {t("spider.createGuestAccount")}
             </button>
           </div>
           <button
             className="mt-2 w-full text-[10px] font-medium text-slate-300 hover:underline"
             onClick={() => setMode("login")}
           >
-            Already have an account? Login
+            {t("spider.alreadyHaveAccount")}
           </button>
         </>
       )}
@@ -287,26 +284,29 @@ const GuestLoginPanel = ({ onLogin }) => {
   );
 };
 
-const AdminLoginPanel = ({ onLogin }) => (
-  <div>
-    <p className="mb-2 text-[11px] font-semibold text-indigo-400">
-      Admin Access
-    </p>
-    <p className="mb-2 text-[10px] text-slate-400">
-      Restricted to system administrators. Use your official credentials.
-    </p>
-    <div className="space-y-2">
-      <input className={fieldBase} placeholder="Admin Email" />
-      <input type="password" className={fieldBase} placeholder="Password" />
-      <button
-        className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-indigo-500 px-3 py-2 text-xs font-semibold text-white"
-        onClick={() => onLogin("admin")}
-      >
-        <LogIn className="h-3 w-3" /> Login
-      </button>
+const AdminLoginPanel = ({ onLogin }) => {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <p className="mb-1 text-xs font-bold text-indigo-400 flex items-center gap-2">
+        <Shield className="w-4 h-4" /> {t("spider.adminAccess")}
+      </p>
+      <p className="mb-4 text-[10px] text-slate-400">
+        {t("spider.adminDesc")}
+      </p>
+      <div className="space-y-3">
+        <input className={fieldBase} placeholder={t("spider.adminEmail")} />
+        <input type="password" className={fieldBase} placeholder={t("spider.password")} />
+        <button
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-white hover:text-indigo-600 transition-all"
+          onClick={() => onLogin("admin")}
+        >
+          <LogIn className="h-4 w-4" /> {t("spider.login")}
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* Main dispatcher */
 
