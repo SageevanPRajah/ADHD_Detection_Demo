@@ -10,7 +10,7 @@ import SaimanInstructions from "./pages/Body Posture Tracking Game/SaimanInstruc
 import SaimanSaysGame from "./pages/Body Posture Tracking Game/SaimanSaysGame.jsx";
 import Result from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 import HandwritingGame from "./pages/Handwriting/HandwritingGame.jsx";
-import SpeechRouter from "./modules/Speech/speechRouter.jsx";
+import SpeechRouter from "./modules/Speech/SpeechRouter.jsx";
 import SaimanResult from "./pages/Body Posture Tracking Game/SaimanResult.jsx";
 
 import EyeTrackTerms from "./pages/eyetrack/EyeTrackTerms.jsx";
