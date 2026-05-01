@@ -59,3 +59,44 @@ export async function sendAdhdVideoTest(videoBlob, rounds) {
 
 // Back-compat alias for older imports
 export const sendToADHDModel = sendAdhdSession;
+
+/**
+ * NEW — Sends pre-computed features (8 numbers) to /predict-features.
+ * This is the fast path: no video upload, no server-side pose extraction.
+ * Features are computed in the browser during the game via MediaPipe WASM.
+ * Backend only runs scaler + Random Forest → result in < 500ms.
+ */
+export async function sendAdhdFeatures(features, meta = {}) {
+  try {
+    console.log("[API] Sending features to /predict-features:", features);
+    const res = await fetch(`${API_BASE}/predict-features`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fidget_score: features.fidget_score,
+        sway_x: features.sway_x,
+        sway_y: features.sway_y,
+        mean_velocity: features.mean_velocity,
+        max_velocity: features.max_velocity,
+        std_velocity: features.std_velocity,
+        mean_abs_displacement: features.mean_abs_displacement,
+        stability_score: features.stability_score,
+        rounds: meta.rounds ?? null,
+        age: meta.age ?? null,
+        gender: meta.gender ?? null,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`API error ${res.status}: ${errorText}`);
+    }
+
+    const data = await res.json();
+    console.log("[API] /predict-features response:", data);
+    return data;
+  } catch (err) {
+    console.error("[API] sendAdhdFeatures failed:", err);
+    return null;
+  }
+}

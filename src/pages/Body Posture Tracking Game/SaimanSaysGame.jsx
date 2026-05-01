@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Rocket, Zap, Clock, Trophy, Camera, Star, LogOut, Play, Square, Download, Activity, Globe } from "lucide-react";
+import { Rocket, Zap, Clock, Trophy, Camera, Star, LogOut, Play, Square, Activity, Globe, Brain } from "lucide-react";
 
 import useWebcamRecorder from "../../body posture hooks/webRecorder.js";
-import { sendAdhdVideoTest } from "../../Body posture Utills/api.js";
+import usePoseDetector from "../../body posture hooks/usePoseDetector.js";
+import { computeFeatures } from "../../Body posture Utills/featureCompute.js";
+import { sendAdhdFeatures } from "../../Body posture Utills/api.js";
 
 import ActionVideo from "./ActionVideo.jsx";
 import { pickAction, FREEZE_VIDEO } from "./GameController.jsx";
@@ -50,13 +52,22 @@ export default function SaimanSaysGame() {
 
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
-  const [lastRecording, setLastRecording] = useState(null);
+  const [featureError, setFeatureError] = useState("");
 
-  const { videoRef, setupStream, startRecording, stopRecording, stopStream } = useWebcamRecorder();
+  // Webcam stream (display only — no video recording needed)
+  const { videoRef, setupStream, stopStream } = useWebcamRecorder();
+
+  // Frontend pose detection (runs during the game in real-time)
+  const { initPoseDetector, startCollecting, stopCollecting, isReady: poseReady, initError: poseInitError } = usePoseDetector();
 
   const sessionTimerRef = useRef(null);
   const actionTimerRef = useRef(null);
   const cycleTimerRef = useRef(null);
+
+  // Init MediaPipe PoseLandmarker once on mount
+  useEffect(() => {
+    initPoseDetector();
+  }, [initPoseDetector]);
 
   useEffect(() => {
     if (!running) return;
@@ -105,14 +116,20 @@ export default function SaimanSaysGame() {
     setTimeLeft(TOTAL_SESSION_SECONDS);
     setRoundCount(0);
     setAdhdResult(null);
+    setFeatureError("");
 
     const okStream = await setupStream();
     setCameraReady(okStream);
     setCameraError(okStream ? "" : t("saiman.cameraRequired"));
     if (!okStream) return;
 
-    const ok = await startRecording();
-    if (!ok) { setCameraError(t("saiman.cameraFailed")); return; }
+    if (!poseReady) {
+      setCameraError("Pose detector is still loading, please wait a moment.");
+      return;
+    }
+
+    // Start real-time pose collection from the webcam video element
+    startCollecting(videoRef.current);
 
     setRunning(true);
     startGameLoop();
@@ -121,24 +138,33 @@ export default function SaimanSaysGame() {
   const endSession = async () => {
     stopGameLoop();
     setRunning(false);
-    const blob = await stopRecording();
-    setLastRecording(blob);
+
+    // Stop pose collection and get the sequence
+    const poseSeq = stopCollecting();
+
     stopStream();
     setCameraReady(false);
 
-    if (!blob) return;
+    // Compute features in the browser (JS math, ~5ms)
+    let features;
+    try {
+      features = computeFeatures(poseSeq);
+    } catch (err) {
+      setFeatureError(err.message);
+      return;
+    }
 
+    // Send only 8 numbers to backend → result in < 500ms
     setApiStatus("loading");
-    const response = await sendAdhdVideoTest(blob, roundCount);
+    const response = await sendAdhdFeatures(features, { rounds: roundCount });
     setApiStatus("idle");
 
-    if (response && response.result) {
+    if (response && response.adhd_score !== undefined) {
       setAdhdResult({
-        adhd_score: response.result.adhd_score,
-        adhd_probability: response.result.adhd_probability,
-        subtype: response.result.subtype,
-        derived_features: response.result.derived_features,
-        message: response.message
+        adhd_score: response.adhd_score,
+        adhd_probability: response.adhd_probability,
+        subtype: response.subtype,
+        derived_features: response.derived_features,
       });
     }
   };
@@ -163,6 +189,24 @@ export default function SaimanSaysGame() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#152663] via-[#2445a3] to-[#345ba3] text-slate-100 font-sans selection:bg-clinic-primary/30">
       <style>{styles}</style>
+
+      {/* MediaPipe loading / error banner */}
+      {!poseReady && !poseInitError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-900/90 border border-clinic-primary/30 rounded-2xl text-xs text-slate-300 backdrop-blur shadow-xl">
+          <Brain className="w-4 h-4 text-clinic-primary animate-pulse" />
+          Preparing AI pose detector… (first load only)
+        </div>
+      )}
+      {poseInitError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-red-900/80 border border-red-500/40 rounded-2xl text-xs text-red-300 backdrop-blur shadow-xl">
+          ⚠ Pose detector failed to load: {poseInitError}
+        </div>
+      )}
+      {featureError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-red-900/80 border border-red-500/40 rounded-2xl text-xs text-red-300 backdrop-blur shadow-xl">
+          ⚠ {featureError}
+        </div>
+      )}
 
       {/* HEADER: NEON GLASSBAR */}
       <header className="sticky top-0 z-50 px-6 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-xl">
@@ -332,16 +376,7 @@ export default function SaimanSaysGame() {
                   disabled={!adhdResult || apiStatus === "loading"}
                 >
                   {apiStatus === "loading" ? <Star className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
-                  {apiStatus === "loading" ? t("saiman.analyzing") : t("saiman.viewResult")}
-                </button>
-
-                <button 
-                  onClick={() => lastRecording && triggerDownload(lastRecording)} 
-                  disabled={!lastRecording || running}
-                  className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 disabled:opacity-20 transition duration-300"
-                  title="Download Log Data"
-                >
-                  <Download className="w-6 h-6" />
+                  {apiStatus === "loading" ? "Analyzing..." : t("saiman.viewResult")}
                 </button>
               </div>
 
