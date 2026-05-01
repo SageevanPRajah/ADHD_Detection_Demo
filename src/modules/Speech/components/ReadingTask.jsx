@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { analyzeVoiceAudio } from '../api';
 
 const ReadingTask = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
-  // Get age from location state or default to 8
+
   const initialAge = location.state?.selectedAge || 8;
   const [childAge, setChildAge] = useState(initialAge);
   const [selectedAge6Story, setSelectedAge6Story] = useState(null);
@@ -13,25 +13,22 @@ const ReadingTask = () => {
   const [selectedAge8Story, setSelectedAge8Story] = useState(null);
   const [selectedAge9Story, setSelectedAge9Story] = useState(null);
   const [selectedAge10Story, setSelectedAge10Story] = useState(null);
-  
-  // Recording state
+
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
-  
+
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
-  
-  // Update age when location state changes
+
   useEffect(() => {
     if (location.state?.selectedAge) {
       setChildAge(location.state.selectedAge);
     }
   }, [location.state]);
 
-  // Age 6 story blocks
   const age6Stories = [
     `ගිරවා ලස්සන කුරුල්ලෙකි.
 
@@ -86,7 +83,6 @@ const ReadingTask = () => {
 ඌ බොහෝ විට ගොවිපලවල් වල දැකිය හැකිය.`
   ];
 
-  // Age 7 story blocks
   const age7Stories = [
     `🐒 වඳුරාගේ කතාව
 ගමේ කැලේ විශාල ගසක් තිබුණා. ඒ ගසේ ජීවත් වුණේ නපුරු වඳුරෙක්. දවසක් වඳුරා ගස් අත්තක වාඩි වී ඉන්න විට ගෙඩි කන කුඩා ලේනෙක් දැක්කා. වඳුරා ලේනාට ගෙඩිය උදුරා ගැනීමට පැන ගත්තා. ලේනා ඉක්මනට පැන ගියා. ලේනා බේරුණේ ඒ කුඩා අතු අතරේ රිංගා යන්නට ලැබුණු නිසයි. වඳුරාට ලේනාව අල්ල ගන්න බැරි වුණා. අන්තිමේදී වඳුරා කළ වැරැද්ද තේරුම් ගත්තා.`,
@@ -114,7 +110,6 @@ const ReadingTask = () => {
 පුංචි ඇත් පැටියෙක් කැලේදී තනියම ඇඬුවා. ඌට අම්මා අතරමං වෙලා. ඌ තැන් තැන්වල ඇවිද ගියා. එකපාරටම ඌට පොඩි හාවෙක් හම්බ වුණා. ඇත් පැටියා ඇයි අඬන්නේ කියලා හාවා ඇහුවා. හාවා ඇත් පැටියාට උදව් කරන්න පොරොන්දු වුණා. දෙන්නා එකතු වෙලා කැලේ පුරා ඇත් මව සෙව්වා. ටික වෙලාවකින් ඇත් මව හම්බ වුණා. එදා ඉඳලා ඇත් පැටියා සහ හාවා හොඳම යාළුවෝ වුණා.`
   ];
 
-  // Age 8 story blocks
   const age8Stories = [
     `මැස්සෙකුයි, ගෙම්බෙකුයි, ඉත්තෑවෙකුයි, කුකුළෙකුයි ගස් කොටයක් උඩ ගෙයක් හදාගෙන උන්නා.මැස්සගෙ නම රුංරුං පංචා. ගෙම්බගෙ නම බක බක අප්පුහාමි. ඉත්තෑවගෙ නම ඉඳිකටු මුදියන්සෙ. කුකුළාගෙ නම හඬලන රාල.
 දවසක් දා හතර දෙනා කැලෑවක් මැදින් ගමනක් ගියා. හතු, මල්, ගෙඩි ජාති, දර එකතු කරන්න. රුංරුං පංචා යාළුවො තුන් දෙනාගෙ ඔළු උඩින් පියාසර කෙරුවා.
@@ -161,7 +156,6 @@ const ReadingTask = () => {
 තුන් දෙනාම ගමට ගියා. එතන කේක් ගෙඩියක් තිබුණේ නැහැ. ගෙම්බාට සහ කුකුළාට හරිම දුක හිතුණා. හිවලා හිනා වුණා. කුකුළා කිව්වා, "නපුරු විහිළු කරන්න එපා." ගෙම්බා කිව්වා, "ඔයාට කවදාවත් විශ්වාස කරන්න බැහැ." එදා ඉඳලා හිවලාට යාළුවෝ හිටියේ නැහැ.`
   ];
 
-  // Age 9 and 10 story blocks (same stories for both ages)
   const age9Stories = [
     `සතියේ දවස් පහ පාසල් යන අත්තම්මලා සිටිති. සිය දූ දරුවන්ගේ දරුවන් කැටුව නැවත පාසල් යන මේ අත්තම්මලා වගේ ම ලිලී අත්තම්මා ද දරුවන්ට ආදරේ ය. එහෙත් ඇය දිනපතා පාසලට එන්නේ ද යන්නේ ද තනිව ම ය. උදෑසන හයට පමණ පාසල අබිමුවට එන ඇය එතැන් සිට සිය දෛනික රාජකාරිය අරඹන්නී ය. ඇය නමින් ලිලී වයලට් ය. කෑගල්ලේ පරගම්මන ඈ උපන් ගම් පියසයි. මේ ' ලිලී අම්මා ' හෙවත් 'වයලට් ආච්චි' පාසලට පැමිණියේ අමුතු ම රාජකාරියකට ය. පොලීසියේ හෝ වෙනත් ආරක්ෂක අංශයක සේවාවක් නොවෙතත් නිල නොලත් එවැනි ම රාජකාරියක ඇය නියැලෙනුයේ ස්වේච්ඡාවෙන් ම ය. උදේ ම සේවයට එන ඇය, පාසලට එන දරුවන් ආරක්ෂිතව පාර මාරු කරවයි. පාසල් බස් රථ, වෑන් රථ මෙන් ම පාසලට ඉදිරියෙන් එහා මෙහා යන වෙනත් වාහන ද කඩිසරව හසුරුවාලයි.දරුවන්ගේ රැකවරණය පතා විටෙක සිය දැඩි අණසක පතුරන ඇගේ මේ සේවය ඒ කාටත් පහසුවකි. ඕ තොමෝ දරුවන්ට මෙන් ම වැඩිහිටියන්ට මාර්ග නීති මතක් කර දෙයි. ඇතැම් නොහික්මුණු රියැදුරකුට තදින් අවවාද කරන්නට වුව ද ඇය නොපැකිළෙයි. එහෙත් දරුවන්ට කරුණාවෙන් මග පෙන්වයි. සේවය ම සිය 'රාජකාරිය ́ කර ගත් මේ අපූරු අත්තම්මා වයස අවුරුදු අසූව ඉක්මවා තිබියදීත් විශ්‍රාම නොගත්තා ය. පුරා අවුරුදු හතළිහකට වැඩි කාලයක් ඇය එක දිගට දරුවන් වෙනුවෙන් කැප වූ මුත් මේ අත්තම්මාගේ රාජකාරියට මාසික වැටුප් නැත; කිසිදු දීමනාවක් නැත; පාසල පැවැත්වෙන සැම දවසක ම ඈ සුපුරුදු රාජකාරියේ ය. ප්‍රමාද වී පැමිණීම් හෝ කෙටි නිවාඩු ද නැත. උදේ හයේ සිට නවයයි තිහ වන තෙක් ද, දහවල් දොළහේ සිට සවස තුනයි තිහ වන තෙක් ද තමා ම සකසා ගත් කාලසටහනකට අනුව ඈ දිනපතා සේවයේ නියැලෙන්නී ය. අමතර සවස පන්ති හෝ ක්‍රීඩා පුහුණුවීම් ආදිය පැවැත්වෙද්දී සවස පහ පසු වන තුරු ඈ පාසලේ ගේට්ටුව ළඟ ය.`,
 
@@ -192,7 +186,7 @@ const ReadingTask = () => {
     `🐕 බල්ලා සහ කුරුල්ලා
 විශාල වත්තේ බල්ලෙක් සහ කුඩා කුරුල්ලෙක් ජීවත් විය. බල්ලා හිතුවා, "මම ලොකුයි, මට ශක්තිය වැඩියි." කුරුල්ලා හිතුවා, "මම පුංචියි, ඒත් මට අහසේ පියාඹන්න පුළුවන්." ඔවුන් දෙදෙනාට එකට කතා බස් කරන්නට පුළුවන් විය. දිනක් බල්ලා වත්තේ තිබූ විශාල වලකට වැටුණා. ඌට එළියට එන්නට බැරි විය.
 
-බල්ලා කෑ ගැසුවත් කිසිවෙකුට ඇසුණේ නැත. කුරුල්ලා වහාම ඉහළ අහසට පියාසර කළේ ය. ඈතින් සිටි මිනිසෙක් කුරුල්ලාගේ අමුතු පියාසැරි රටාව දැක පුදුම විය. ඔහු වත්තට පැමිණ බල්ලා වලක වැටී සිටිනවා දුටුවේ ය. මිනිසා බල්ලා එළියට ගත්තේ ය. බල්ලා කුරුල්ලාට ස්තූති කළේ ය. එදා සිට ඔවුන් දෙදෙනා තේරුම් ගත්තේ, ලොකු කුඩා භේදයකින් තොරව මිත්‍රත්වය වැදගත් බව ය.`,
+බල්ලා කෑ ගැසුවත් කිසිවෙකුට ඇසුණේ නැත. කුරුල්ලා වහාම ඉහළ අහසට පියාසර කළේ ය. ඈතින් සිටි මිනිසෙක් කුරුල්ලාගේ අමුතු පියාසැරි රටාව දැක පුදුම විය. ඔහු වත්තට පැමිණ බල්ලා වලක වැටී සිටිනවා දුටුවේ ය. මිනිසා බල්ලා එළියට ගත්තේ ය. බල්ලා කුරුල්ලාට ස්තුති කළේ ය. එදා සිට ඔවුන් දෙදෙනා තේරුම් ගත්තේ, ලොකු කුඩා භේදයකින් තොරව මිත්‍රත්වය වැදගත් බව ය.`,
 
     `📝 දිනපොතේ කතාව
 ගමේ පුංචි දැරියක් දිනපොතක් තබා ගැනීමට පුරුදුව සිටියා ය. ඇය දිනපතාම පාසලේ සහ ගමේ සිදු වූ දේවල් එහි ලියා තැබුවා ය. ඇයගේ දිනපොතේ තිබුණේ දිනපතා කරන කාරුණික ක්‍රියා පිළිබඳ සටහන් ය. "අද මම අත්තම්මාට තේ එකක් හැදුවා. මම මල්ලිත් එක්ක සෙල්ලම් කළා." වැනි දේවල් එහි තිබුණි. ඇයගේ මේ පුරුද්ද ගුරුවරිය දුටුවා ය.
@@ -200,25 +194,19 @@ const ReadingTask = () => {
 ගුරුවරිය දිනපොත පන්තියේදී කියෙව්වා. පන්තියේ සිටි අනෙක් දරුවන්ට ද කාරුණික ක්‍රියා කිරීමේ වටිනාකම තේරුම් ගියා. ඔවුන් ද දිනපොත් තබා ගැනීමට පටන් ගත්තා. ගුරුවරිය සතුටින් කිව්වා, "පුංචි දැරියගේ දිනපොත මුළු පන්තියටම ආදර්ශයක් වුණා." දැරිය එදා සිට කිසිවෙකුට නොදැනෙන්නට තවත් කාරුණික දේවල් කිරීමට පටන් ගත්තා ය.`
   ];
 
-  const age10Stories = age9Stories; // Same stories for age 10
+  const age10Stories = age9Stories;
 
-  // Randomly select a story when age changes to 6, 7, 8, 9, or 10
   useEffect(() => {
     if (childAge === 6) {
-      const randomIndex = Math.floor(Math.random() * age6Stories.length);
-      setSelectedAge6Story(age6Stories[randomIndex]);
+      setSelectedAge6Story(age6Stories[Math.floor(Math.random() * age6Stories.length)]);
     } else if (childAge === 7) {
-      const randomIndex = Math.floor(Math.random() * age7Stories.length);
-      setSelectedAge7Story(age7Stories[randomIndex]);
+      setSelectedAge7Story(age7Stories[Math.floor(Math.random() * age7Stories.length)]);
     } else if (childAge === 8) {
-      const randomIndex = Math.floor(Math.random() * age8Stories.length);
-      setSelectedAge8Story(age8Stories[randomIndex]);
+      setSelectedAge8Story(age8Stories[Math.floor(Math.random() * age8Stories.length)]);
     } else if (childAge === 9) {
-      const randomIndex = Math.floor(Math.random() * age9Stories.length);
-      setSelectedAge9Story(age9Stories[randomIndex]);
+      setSelectedAge9Story(age9Stories[Math.floor(Math.random() * age9Stories.length)]);
     } else if (childAge === 10) {
-      const randomIndex = Math.floor(Math.random() * age10Stories.length);
-      setSelectedAge10Story(age10Stories[randomIndex]);
+      setSelectedAge10Story(age10Stories[Math.floor(Math.random() * age10Stories.length)]);
     }
   }, [childAge]);
 
@@ -228,9 +216,24 @@ const ReadingTask = () => {
       streamRef.current = stream;
       chunksRef.current = [];
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      const mimeTypes = [
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+      ];
+
+      let selectedMimeType = '';
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+
+      const mediaRecorder = selectedMimeType
+        ? new MediaRecorder(stream, { mimeType: selectedMimeType })
+        : new MediaRecorder(stream);
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -239,21 +242,29 @@ const ReadingTask = () => {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const file = new File([blob], `recording_${Date.now()}.webm`, { type: 'audio/webm' });
+        const mime = mediaRecorder.mimeType || 'audio/webm';
+        const fileExtension = mime.includes('mp4')
+          ? 'm4a'
+          : mime.includes('mpeg')
+          ? 'mp3'
+          : 'webm';
+
+        const blob = new Blob(chunksRef.current, { type: mime });
+        const file = new File([blob], `recording_${Date.now()}.${fileExtension}`, {
+          type: mime,
+        });
+
         setSelectedFile(file);
-        // Don't reset recordingTime here - preserve it to show the duration
       };
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsRecording(true);
+      setRecordingTime(0);
 
-      // Start timer
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime((prev) => prev + 1);
       }, 1000);
-
     } catch (error) {
       console.error('Error starting recording:', error);
       alert('Could not access microphone. Please check permissions.');
@@ -262,17 +273,16 @@ const ReadingTask = () => {
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
-      // Clear the timer first to preserve the final recording time
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      
+
       mediaRecorderRef.current.stop();
       setIsRecording(false);
 
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     }
   }, [isRecording]);
@@ -286,8 +296,26 @@ const ReadingTask = () => {
   const clearFile = () => {
     setSelectedFile(null);
     setRecordingTime(0);
-    if (isRecording) {
-      stopRecording();
+    if (isRecording) stopRecording();
+  };
+
+  const performAnalysis = async (fileToUpload) => {
+    try {
+      const result = await analyzeVoiceAudio(fileToUpload, childAge);
+
+      sessionStorage.setItem('analysisResult', JSON.stringify(result));
+      sessionStorage.removeItem('isAnalyzing');
+      sessionStorage.removeItem('analysisError');
+
+      navigate('/speech/results', { state: { result }, replace: true });
+    } catch (error) {
+      console.error('Analysis error:', error);
+      sessionStorage.removeItem('isAnalyzing');
+      sessionStorage.setItem(
+        'analysisError',
+        error.message || 'Failed to analyze audio. Please try again.'
+      );
+      alert(error.message || 'Failed to analyze audio. Please try again.');
     }
   };
 
@@ -298,94 +326,34 @@ const ReadingTask = () => {
       return;
     }
 
-    // Set analyzing flag first (before navigation)
     sessionStorage.setItem('isAnalyzing', 'true');
     sessionStorage.setItem('pendingChildAge', childAge.toString());
-    // Clear any previous results
     sessionStorage.removeItem('analysisResult');
     sessionStorage.removeItem('analysisError');
-    
-    // Navigate to results page immediately to show loading
-    // Using setTimeout to ensure sessionStorage is written before navigation
+
     setTimeout(() => {
-      navigate('/results', { replace: false });
-      // Start analysis after navigation
+      navigate('/speech/results', { replace: false });
       performAnalysis(fileToUpload);
     }, 0);
   };
 
-  const performAnalysis = async (fileToUpload) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-      formData.append('child_age', childAge.toString());
-
-      const response = await fetch('http://localhost:8000/analyze', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { detail: errorText };
-        }
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      // Store result and clear loading flag
-      sessionStorage.setItem('analysisResult', JSON.stringify(result));
-      sessionStorage.removeItem('isAnalyzing');
-      
-      // Navigate to results page with result
-      navigate('/results', { state: { result }, replace: true });
-
-    } catch (error) {
-      console.error('Analysis error:', error);
-      sessionStorage.removeItem('isAnalyzing');
-      sessionStorage.setItem('analysisError', error.message || 'Failed to analyze audio. Please try again.');
-      alert(error.message || 'Failed to analyze audio. Please try again.');
-      navigate('/reading-task', { replace: true });
-    }
-  };
-
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (isRecording) {
-        stopRecording();
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [isRecording, stopRecording]);
+  }, []);
 
   const generateParagraph = (age) => {
-    if (age === 6) {
-      return selectedAge6Story || age6Stories[0];
-    }
-    
-    if (age === 7) {
-      return selectedAge7Story || age7Stories[0];
-    }
-    
-    if (age === 8) {
-      return selectedAge8Story || age8Stories[0];
-    }
-    
-    if (age === 9) {
-      return selectedAge9Story || age9Stories[0];
-    }
-    
-    if (age === 10) {
-      return selectedAge10Story || age10Stories[0];
-    }
+    if (age === 6) return selectedAge6Story || age6Stories[0];
+    if (age === 7) return selectedAge7Story || age7Stories[0];
+    if (age === 8) return selectedAge8Story || age8Stories[0];
+    if (age === 9) return selectedAge9Story || age9Stories[0];
+    if (age === 10) return selectedAge10Story || age10Stories[0];
 
     const paragraphs = {
-
       11: `තාක්ෂණය අපේ ජීවිතවල හරිම වැදගත්. මම පරිගණක භාවිතා කරලා හොයාගන්නවා හා ඉගෙන ගන්නවා. අනාගතයේ මට සොෆ්ට්වෙයාර් ඉංජිනේරුවෙක් වෙන්න ඕනෑ. පරිගණක ගැන මට ඉතා කැමතියි. ඔවුන් පුදුම දේවල් කරන්න පුළුවන්. තාක්ෂණය ලෝකය වෙනස් කරනවා.
 
 පාසලේ අපට පරිගණක විද්‍යා පන්තියක් තියෙනවා. අපි කේතකරණය ඉගෙන ගන්නවා. අපි වැඩසටහන් ලිවීම ඉගෙන ගන්නවා. මගේ ගුරුවරයා පරිගණක කේත රචනය කරන්න මට උගන්වනවා. අපි සරල ක්‍රීඩා සාදනවා. අපි චිත්‍ර නිර්මාණය කරන්න වැඩසටහන් සාදනවා. කේතනය ප්‍රහේලිකා විසඳීම වැනි ය.
@@ -410,109 +378,165 @@ const ReadingTask = () => {
 
 වන ජීවීන් ආරක්ෂා කිරීම වැදගත්. බොහෝ සතුන් වඳවීමේ තර්ජනයට මුහුණ දෙනවා. ඔවුන්ගේ වාසස්ථාන විනාශ වෙමින් පවතී. අපි වන ජීවීන් ආරක්ෂා කළ යුතුයි. අපි වාසස්ථාන ආරක්ෂා කළ යුතුයි. අපි ජාතික උද්‍යාන සහ සංරක්ෂණ පිහිටුවීමට පුළුවන්. සෑම විශේෂයක්ම වැදගත්.
 
-පරිසරය ආරක්ෂා කිරීම සැමගේම වගකීමයි. අපේ ක්‍රියාවන් අනාගතය තීරණය කරනවා. අපි අද ප්‍රතිකාර කළ යුතුයි. අපි කුඩා දේවල්වලින් ආරම්භ කරන්න පුළුවන්. අපට අපේ පවුල් හා යාළුවන් අධ්‍යාපනය ලබා දිය හැක. එකට, අපට වෙනසක් කරන්න පුළුවන්. අපි සෞඛ්‍ය සම්පන්න ග්‍රහලෝකයක් තනන්න පුළුවන්. එය අපේ සහ අනාගත පරම්පරා සඳහා වේ.`
+පරිසරය ආරක්ෂා කිරීම සැමගේම වගකීමයි. අපේ ක්‍රියාවන් අනාගතය තීරණය කරනවා. අපි අද ප්‍රතිකාර කළ යුතුයි. අපි කුඩා දේවල්වලින් ආරම්භ කරන්න පුළුවන්. අපට අපේ පවුල් හා යාළුවන් අධ්‍යාපනය ලබා දිය හැක. එකට, අපට වෙනසක් කරන්න පුළුවන්. අපි සෞඛ්‍ය සම්පන්න ග්‍රහලෝකයක් තනන්න පුළුවන්. එය අපේ සහ අනාගත පරම්පරා සඳහා වේ.`,
     };
-    return paragraphs[age] || paragraphs[8];
+
+    return paragraphs[age] || paragraphs[11];
   };
 
   return (
     <section id="reading" className="py-20">
       <div className="container-custom">
-        <div className="max-w-4xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-400/30 rounded-full mb-4">
-              <span className="text-3xl">📖</span>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16 relative z-10 animate-fade-in-up">
+            <div className="inline-flex items-center justify-center w-24 h-24 bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_20px_rgba(59,130,246,0.3)] rounded-3xl mb-6 transform hover:rotate-12 transition-transform duration-300">
+              <span className="text-5xl drop-shadow-md">📖</span>
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+            <h2 className="text-4xl lg:text-5xl font-black text-white mb-6 drop-shadow-md">
               Reading Task
             </h2>
-            <p className="text-lg text-white/80">
+            <p className="text-xl text-white/80 font-medium tracking-wide max-w-2xl mx-auto">
               Read the fun story below and record your voice! 🎤
             </p>
-            </div>
+          </div>
 
-            {/* Instructions */}
-          <div className="bg-gradient-to-r from-blue-500/25 to-purple-500/25 border-l-4 border-blue-400 p-5 mb-6 backdrop-blur-sm rounded-xl shadow-md">
-              <div className="flex items-start">
-                <div className="text-2xl mr-3">💡</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-fade-in-up animate-delay-100">
+            <div className="md:col-span-2 bg-white/10 backdrop-blur-xl border-l-4 border-blue-400 p-6 rounded-2xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] relative overflow-hidden h-full flex items-center">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent pointer-events-none"></div>
+              <div className="flex items-start relative z-10">
+                <div className="text-3xl mr-4 animate-bounce">💡</div>
                 <div>
-                <p className="text-base text-white font-medium">
-                    <strong className="text-blue-300">Instructions:</strong> Read the story below out loud clearly and slowly. 
-                    When you're ready, click the microphone button to record your voice. Have fun! ✨
+                  <p className="text-lg text-white/90 font-medium leading-relaxed">
+                    <strong className="text-blue-300 tracking-wide uppercase text-sm mb-1 block">
+                      Instructions:
+                    </strong>
+                    Read the story below out loud clearly and slowly. Use the recorder on the right! 🎤
                   </p>
                 </div>
               </div>
             </div>
 
-          {/* Main Content: Paragraph and Recording Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Paragraph Display - Left Side */}
-            <div className="bg-gradient-to-br from-blue-500/15 to-purple-500/15 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-blue-400/30 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-400/10 rounded-full blur-2xl"></div>
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] relative overflow-hidden group/age">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover/age:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative z-10 h-full flex flex-col justify-center">
+                <label
+                  htmlFor="age-select"
+                  className="block text-[10px] font-black text-blue-300 uppercase tracking-[0.2em] mb-2 text-center"
+                >
+                  Change Child&apos;s Age
+                </label>
+                <div className="relative group">
+                  <select
+                    id="age-select"
+                    value={childAge}
+                    onChange={(e) => setChildAge(parseInt(e.target.value, 10))}
+                    className="w-full bg-black/40 border border-white/20 rounded-xl px-4 py-3 text-white font-black text-xl appearance-none focus:outline-none focus:border-blue-400 transition-all cursor-pointer text-center"
+                  >
+                    {[6, 7, 8, 9, 10].map((age) => (
+                      <option key={age} value={age} className="bg-[#0E1B4D] text-white">
+                        Age {age}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-blue-400">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="bg-white/10 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8 border border-white/20 relative overflow-hidden group animate-fade-in-up animate-delay-200">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-[50px] mix-blend-screen group-hover:bg-purple-500/20 transition-colors duration-700"></div>
               <div className="relative z-10">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <span className="text-2xl">📚</span>
-                  <span>Story for Age {childAge}</span>
+                <h3 className="text-2xl font-black text-white mb-6 flex items-center gap-3 drop-shadow-md">
+                  <span className="text-3xl">📚</span>
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">
+                    Story for Age {childAge}
+                  </span>
                 </h3>
-                <div className="text-lg leading-relaxed text-white/95 whitespace-pre-line max-h-[600px] overflow-y-auto custom-scrollbar bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="text-lg leading-relaxed text-white/95 whitespace-pre-line max-h-[600px] overflow-y-auto custom-scrollbar bg-black/20 rounded-2xl p-6 border border-white/10 shadow-inner font-medium tracking-wide">
                   {generateParagraph(childAge)}
                 </div>
               </div>
             </div>
 
-            {/* Audio Recording Section - Right Side */}
-            <div className="bg-gradient-to-br from-green-500/15 to-blue-500/15 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-green-400/30 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-16 h-16 bg-green-400/10 rounded-full blur-xl"></div>
-            {/* Recording Area */}
-            <div className="bg-white/10 rounded-2xl p-6 text-center border border-white/20 relative z-10">
-                <div className="space-y-4">
+            <div className="bg-white/10 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8 border border-white/20 relative overflow-hidden group animate-fade-in-up animate-delay-300">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-green-500/20 rounded-full blur-[50px] mix-blend-screen"></div>
+
+              <div className="bg-black/20 rounded-3xl p-8 text-center border border-white/10 relative z-10 shadow-inner h-full flex flex-col justify-center">
+                <div className="space-y-6">
                   {selectedFile && !isRecording ? (
-                    <>
-                      <div className="inline-flex items-center justify-center w-20 h-20 bg-green-400/30 rounded-full mb-4">
-                        <span className="text-4xl">✅</span>
+                    <div className="animate-fade-in-up">
+                      <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-3xl mb-6 shadow-[0_0_20px_rgba(16,185,129,0.5)] transform hover:rotate-12 transition-transform duration-300">
+                        <span className="text-5xl drop-shadow-md">✅</span>
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-white mb-2">Great Job! 🎉</h3>
-                        <div className="bg-blue-400/20 rounded-lg p-3 mb-3 border border-blue-400/30">
-                          <p className="text-blue-200 font-semibold">Duration: {formatTime(recordingTime)}</p>
+                        <h3 className="text-3xl font-black text-white mb-4 drop-shadow-sm">
+                          Great Job! 🎉
+                        </h3>
+                        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 mb-6 border border-white/20 inline-block">
+                          <p className="text-green-300 font-bold tracking-wider text-xl">
+                            Duration: {formatTime(recordingTime)}
+                          </p>
                         </div>
-                        <button
-                          onClick={clearFile}
-                          className="bg-purple-500/30 hover:bg-purple-500/40 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 border border-purple-400/50"
-                        >
-                          Record Again
-                        </button>
+                        <div className="flex flex-col gap-4">
+                          <button
+                            onClick={handleSubmit}
+                            className="w-full relative overflow-hidden group px-8 py-5 rounded-[1.5rem] font-black text-lg uppercase tracking-widest transition-all duration-300 transform bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white hover:scale-[1.02] shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-white/20 hover:shadow-[0_0_50px_rgba(168,85,247,0.7)]"
+                          >
+                            <div className="absolute inset-0 bg-white/20 w-1/2 -skew-x-12 group-hover:animate-[slide_1s_ease-in-out]"></div>
+                            <span className="flex items-center justify-center gap-2 relative z-10 drop-shadow-md">
+                              <span>🚀</span>
+                              <span>Analyze Now</span>
+                              <span>✨</span>
+                            </span>
+                          </button>
+
+                          <button
+                            onClick={clearFile}
+                            className="px-6 py-4 rounded-2xl border border-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-all duration-300 text-sm font-bold tracking-widest uppercase"
+                          >
+                            Record Again
+                          </button>
+                        </div>
                       </div>
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 transition-all duration-300 ${
-                        isRecording 
-                          ? 'bg-red-500/40 animate-pulse shadow-lg shadow-red-500/30' 
-                          : 'bg-blue-400/30 hover:scale-110'
-                      }`}>
-                        <span className="text-4xl">{isRecording ? '🎤' : '🎙️'}</span>
+                    <div className="animate-fade-in-up">
+                      <div
+                        className={`relative inline-flex items-center justify-center w-28 h-28 rounded-full mb-8 transition-all duration-300 ${
+                          isRecording
+                            ? 'bg-red-500 shadow-[0_0_40px_rgba(239,68,68,0.8)] scale-110 animate-pulse'
+                            : 'bg-white/10 border border-white/20 shadow-inner group-hover:bg-white/20'
+                        }`}
+                      >
+                        {isRecording && (
+                          <div className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-75"></div>
+                        )}
+                        <span className="text-5xl drop-shadow-md relative z-10">
+                          {isRecording ? '🎤' : '🎙️'}
+                        </span>
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-white mb-3">
+                        <h3 className="text-2xl font-black text-white mb-6 drop-shadow-md">
                           {isRecording ? 'Recording... 🔴' : 'Ready to Record! ✨'}
                         </h3>
                         {isRecording && (
-                          <div className="mb-4 bg-red-500/20 rounded-xl p-4 border border-red-400/30">
-                            <div className="text-3xl font-mono font-bold text-yellow-300 mb-2">
+                          <div className="mb-8 p-6 bg-black/30 rounded-2xl border border-red-500/30 backdrop-blur-md max-w-[250px] mx-auto">
+                            <div className="text-4xl font-mono font-black text-red-400 mb-4 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)] tracking-wider">
                               {formatTime(recordingTime)}
                             </div>
-                            <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                              <div className="bg-gradient-to-r from-red-400 to-pink-400 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                              <div className="bg-gradient-to-r from-red-600 to-red-400 h-full rounded-full animate-pulse"></div>
                             </div>
                           </div>
                         )}
-                        <p className="text-white/80 mb-4 text-base">
-                          {isRecording
-                            ? 'Keep reading the story clearly! 📖'
-                            : 'Click the button below to start! 👇'
-                          }
+                        <p className="text-white/70 font-medium mb-8 text-lg max-w-xs mx-auto">
+                          {isRecording ? 'Keep reading the story clearly! 📖' : 'Click the button below to start! 👇'}
                         </p>
                         <button
                           onClick={() => {
@@ -522,43 +546,32 @@ const ReadingTask = () => {
                               startRecording();
                             }
                           }}
-                          className={`w-full px-6 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
+                          className={`w-full max-w-[280px] mx-auto block px-8 py-5 rounded-full font-black text-lg uppercase tracking-wider transition-all duration-300 transform ${
                             isRecording
-                              ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse border-2 border-red-400'
-                              : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-2 border-white/30 shadow-lg'
+                              ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] border border-red-400/50 hover:scale-105'
+                              : 'bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:scale-105 hover:shadow-xl backdrop-blur-md'
                           }`}
                         >
-                          {isRecording ? '⏹️ Stop Recording' : '🎤 Start Recording'}
+                          <span className="flex items-center justify-center gap-3 relative z-10">
+                            {isRecording ? (
+                              <>
+                                <span className="w-3 h-3 bg-white rounded-sm animate-pulse"></span>
+                                Stop Recording
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-red-400 drop-shadow-md">●</span>
+                                Start Recording
+                              </>
+                            )}
+                          </span>
                         </button>
                       </div>
-                    </>
+                    </div>
                   )}
+                </div>
+              </div>
             </div>
-          </div>
-
-            {/* Submit Button */}
-            <div className="mt-6 relative z-10">
-              <button
-                onClick={handleSubmit}
-                disabled={!selectedFile}
-                className={`w-full px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                  selectedFile
-                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white shadow-xl hover:shadow-2xl border-2 border-yellow-300/50'
-                    : 'bg-white/10 text-white/50 cursor-not-allowed border-2 border-white/20'
-                }`}
-              >
-                {selectedFile ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span>🚀</span>
-                    <span>Analyze My Speech!</span>
-                    <span>✨</span>
-                  </span>
-                ) : (
-                  '🎤 Record Audio First'
-                )}
-            </button>
-            </div>
-          </div>
           </div>
         </div>
       </div>
