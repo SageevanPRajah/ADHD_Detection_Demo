@@ -16,6 +16,8 @@ export default function usePoseDetector() {
   const canvasRef = useRef(null); // Offscreen canvas for downsampling
   const [isReady, setIsReady] = useState(false);
   const [initError, setInitError] = useState(null);
+  // Bug #10 fix: expose live pose detection status so the UI can show a green/red dot
+  const [poseDetected, setPoseDetected] = useState(false);
 
   /**
    * Load MediaPipe PoseLandmarker (WASM from CDN).
@@ -92,6 +94,9 @@ export default function usePoseDetector() {
             row.push(lm[id].x, lm[id].y);
           }
           poseSequenceRef.current.push(row);
+          setPoseDetected(true);
+        } else {
+          setPoseDetected(false);
         }
 
         lastTimestamp = nowMs;
@@ -112,11 +117,12 @@ export default function usePoseDetector() {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    setPoseDetected(false);
     const seq = [...poseSequenceRef.current];
     poseSequenceRef.current = [];
     console.log(`[PoseDetector] Stopped. Collected ${seq.length} frames.`);
     return seq;
   }, []);
 
-  return { initPoseDetector, startCollecting, stopCollecting, isReady, initError };
+  return { initPoseDetector, startCollecting, stopCollecting, isReady, initError, poseDetected };
 }

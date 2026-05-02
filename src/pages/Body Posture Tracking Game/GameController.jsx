@@ -21,6 +21,13 @@ export const ACTIONS = [
 
 export const FREEZE_VIDEO = "/body posture video/freeze_new.mp4";
 
+// Bug #8 fix: shuffled-deck picker — all 4 actions appear before any repeats.
+// Pure Math.random() could show the same action 3+ times in a row.
+let deck = [];
 export function pickAction() {
-  return ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
+  if (deck.length === 0) {
+    // Refill and shuffle when the deck is empty
+    deck = [...ACTIONS].sort(() => Math.random() - 0.5);
+  }
+  return deck.pop();
 }

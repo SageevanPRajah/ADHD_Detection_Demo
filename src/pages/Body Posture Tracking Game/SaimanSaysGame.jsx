@@ -29,6 +29,13 @@ const styles = `
     0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
     50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
   }
+  /* Bug #5 fix: countdown animation */
+  @keyframes countdownPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    40%  { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+  .countdown-pop { animation: countdownPop 0.4s ease forwards; }
   .neon-border-action { animation: neonPulseAction 2s infinite; border: 2px solid #22c55e; }
   .neon-border-freeze { animation: neonPulseFreeze 2s infinite; border: 2px solid #3b82f6; }
   .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -53,16 +60,31 @@ export default function SaimanSaysGame() {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [featureError, setFeatureError] = useState("");
+  // Bug #2 fix: track API errors separately so user can retry
+  const [apiError, setApiError] = useState("");
+  // Bug #3 fix: track round errors
+  const [roundError, setRoundError] = useState("");
+  // Bug #5 fix: 3-2-1 countdown state (null = not counting, 3/2/1 = counting)
+  const [countdown, setCountdown] = useState(null);
+  // Bug #6 fix: track time remaining in the current action phase
+  const [actionTimeLeft, setActionTimeLeft] = useState(ACTION_DURATION);
 
   // Webcam stream (display only — no video recording needed)
   const { videoRef, setupStream, stopStream } = useWebcamRecorder();
 
   // Frontend pose detection (runs during the game in real-time)
-  const { initPoseDetector, startCollecting, stopCollecting, isReady: poseReady, initError: poseInitError } = usePoseDetector();
+  // Bug #10 fix: destructure poseDetected so we can show a live green/red dot
+  const { initPoseDetector, startCollecting, stopCollecting, isReady: poseReady, initError: poseInitError, poseDetected } = usePoseDetector();
 
   const sessionTimerRef = useRef(null);
   const actionTimerRef = useRef(null);
   const cycleTimerRef = useRef(null);
+  const countdownTimerRef = useRef(null);  // Bug #5 fix: ref for countdown interval
+  const actionSubTimerRef = useRef(null);  // Bug #6 fix: ref for per-action sub-timer
+  // Refs to avoid stale closures when endSession is called from a useEffect
+  const roundCountRef = useRef(0);
+  const lastFeaturesRef = useRef(null);
+  const lastRoundsRef = useRef(0);
 
   // Init MediaPipe PoseLandmarker once on mount
   useEffect(() => {
@@ -72,19 +94,29 @@ export default function SaimanSaysGame() {
   useEffect(() => {
     if (!running) return;
     sessionTimerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) { endSession(); return 0; }
-        return t - 1;
-      });
+      // Bug #1 fix: only decrement inside the state updater — never call async
+      // functions inside a React state updater (it must be pure & synchronous)
+      setTimeLeft((t) => (t <= 1 ? 0 : t - 1));
     }, 1000);
     return () => clearInterval(sessionTimerRef.current);
   }, [running]);
 
+  // Bug #1 fix: trigger endSession via a separate effect, not inside setState
+  useEffect(() => {
+    if (timeLeft === 0 && running) {
+      endSession();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
+
   const stopGameLoop = useCallback(() => {
     clearTimeout(actionTimerRef.current);
     clearTimeout(cycleTimerRef.current);
+    clearInterval(actionSubTimerRef.current);  // Bug #6 fix: also clear sub-timer
     actionTimerRef.current = null;
     cycleTimerRef.current = null;
+    actionSubTimerRef.current = null;
+    setActionTimeLeft(ACTION_DURATION);        // Bug #6 fix: reset sub-timer display
   }, []);
 
   const runRound = useCallback(() => {
@@ -92,10 +124,19 @@ export default function SaimanSaysGame() {
     setCurrentVideo(action.video);
     setCurrentText(action.text);
     setMode("action");
-    setRoundCount((r) => r + 1);
+    // Keep ref in sync so endSession called from a useEffect gets the latest value
+    setRoundCount((r) => { roundCountRef.current = r + 1; return r + 1; });
+
+    // Bug #6 fix: start per-action countdown so the child knows when FREEZE is coming
+    setActionTimeLeft(ACTION_DURATION);
+    clearInterval(actionSubTimerRef.current);
+    actionSubTimerRef.current = setInterval(() => {
+      setActionTimeLeft((s) => (s <= 1 ? 0 : s - 1));
+    }, 1000);
 
     clearTimeout(actionTimerRef.current);
     actionTimerRef.current = setTimeout(() => {
+      clearInterval(actionSubTimerRef.current);  // stop sub-timer on freeze
       setCurrentVideo(FREEZE_VIDEO);
       setCurrentText(t("saiman.freeze") || "FREEZE! 🧊");
       setMode("freeze");
@@ -115,8 +156,12 @@ export default function SaimanSaysGame() {
   const startSession = async () => {
     setTimeLeft(TOTAL_SESSION_SECONDS);
     setRoundCount(0);
+    roundCountRef.current = 0;
     setAdhdResult(null);
     setFeatureError("");
+    setApiError("");
+    setRoundError("");
+    lastFeaturesRef.current = null;
 
     const okStream = await setupStream();
     setCameraReady(okStream);
@@ -124,9 +169,29 @@ export default function SaimanSaysGame() {
     if (!okStream) return;
 
     if (!poseReady) {
-      setCameraError("Pose detector is still loading, please wait a moment.");
+      // Bug #9 fix: close the camera stream if we can't start — previously it
+      // stayed open leaving the camera indicator light on with no game running
+      stopStream();
+      setCameraReady(false);
+      setCameraError("Pose detector is still loading, please wait a moment and try again.");
       return;
     }
+
+    // Bug #5 fix: 3-2-1 countdown before starting so the child can get into position
+    setCountdown(3);
+    await new Promise((resolve) => {
+      let n = 3;
+      countdownTimerRef.current = setInterval(() => {
+        n -= 1;
+        if (n <= 0) {
+          clearInterval(countdownTimerRef.current);
+          setCountdown(null);
+          resolve();
+        } else {
+          setCountdown(n);
+        }
+      }, 1000);
+    });
 
     // Start real-time pose collection from the webcam video element
     startCollecting(videoRef.current);
@@ -139,9 +204,15 @@ export default function SaimanSaysGame() {
     stopGameLoop();
     setRunning(false);
 
-    // Stop pose collection and get the sequence
-    const poseSeq = stopCollecting();
+    // Bug #3 fix: guard against zero-round sessions that would crash featureCompute
+    if (roundCountRef.current < 1) {
+      stopStream();
+      setCameraReady(false);
+      setRoundError("Please complete at least one round before stopping! Press Start and try again.");
+      return;
+    }
 
+    const poseSeq = stopCollecting();
     stopStream();
     setCameraReady(false);
 
@@ -154,12 +225,44 @@ export default function SaimanSaysGame() {
       return;
     }
 
-    // Send only 8 numbers to backend → result in < 500ms
+    // Store features so the user can retry if the API call fails
+    lastFeaturesRef.current = features;
+    lastRoundsRef.current = roundCountRef.current;
+
     setApiStatus("loading");
-    const response = await sendAdhdFeatures(features, { rounds: roundCount });
+    setApiError("");
+    const response = await sendAdhdFeatures(features, { rounds: roundCountRef.current });
     setApiStatus("idle");
 
-    if (response && response.adhd_score !== undefined) {
+    // detect API failure and surface it to the user instead of
+    // silently leaving the Results button permanently disabled
+    if (!response) {
+      setApiError("Could not reach the server. Check your connection and click Retry.");
+      return;
+    }
+
+    if (response.adhd_score !== undefined) {
+      setAdhdResult({
+        adhd_score: response.adhd_score,
+        adhd_probability: response.adhd_probability,
+        subtype: response.subtype,
+        derived_features: response.derived_features,
+      });
+    }
+  };
+
+  // Bug #2 fix: retry function uses stored features so the user doesn't need to replay
+  const retryApiCall = async () => {
+    if (!lastFeaturesRef.current) return;
+    setApiStatus("loading");
+    setApiError("");
+    const response = await sendAdhdFeatures(lastFeaturesRef.current, { rounds: lastRoundsRef.current });
+    setApiStatus("idle");
+    if (!response) {
+      setApiError("Still can't reach the server. Please try again later.");
+      return;
+    }
+    if (response.adhd_score !== undefined) {
       setAdhdResult({
         adhd_score: response.adhd_score,
         adhd_probability: response.adhd_probability,
@@ -172,17 +275,8 @@ export default function SaimanSaysGame() {
   const formatTime = (sec) =>
     `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 
-  const triggerDownload = (blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `adhd-saiman-recording.webm`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  // Bug #4 fix: triggerDownload removed — it was dead code never called anywhere.
+  // Video recording is no longer used in this flow (features come from MediaPipe directly).
 
   const timePercent = (timeLeft / TOTAL_SESSION_SECONDS) * 100;
 
@@ -207,6 +301,23 @@ export default function SaimanSaysGame() {
           ⚠ {featureError}
         </div>
       )}
+      {/* Bug #3 fix: show round error */}
+      {roundError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-orange-900/80 border border-orange-500/40 rounded-2xl text-xs text-orange-200 backdrop-blur shadow-xl">
+          ⚠ {roundError}
+        </div>
+      )}
+      {/* Bug #5 fix: full-screen 3-2-1 countdown overlay */}
+      {countdown !== null && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md">
+          <p className="text-white/60 text-lg font-bold uppercase tracking-[0.3em] mb-6">Get Ready!</p>
+          <span key={countdown} className="countdown-pop text-[12rem] font-black leading-none text-white drop-shadow-[0_0_60px_rgba(99,102,241,0.8)]">
+            {countdown}
+          </span>
+          <p className="text-white/50 text-sm mt-8 uppercase tracking-widest">Stand in front of the camera</p>
+        </div>
+      )}
+
 
       {/* HEADER: NEON GLASSBAR */}
       <header className="sticky top-0 z-50 px-6 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-xl">
@@ -236,8 +347,19 @@ export default function SaimanSaysGame() {
               </div>
             </div>
 
-            <button 
-              onClick={() => navigate("/saiman-instructions")} 
+            {/* Bug #7 fix: Exit cleans up camera + timers before navigating away */}
+            <button
+              onClick={() => {
+                if (running) {
+                  stopGameLoop();
+                  stopStream();
+                  clearInterval(sessionTimerRef.current);
+                  clearInterval(countdownTimerRef.current);
+                  setRunning(false);
+                  setCameraReady(false);
+                }
+                navigate("/saiman-instructions");
+              }}
               className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition duration-300 border border-white/5"
             >
               <LogOut className="w-4 h-4" />
@@ -295,20 +417,43 @@ export default function SaimanSaysGame() {
                {mode === "freeze" && running && (
                   <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-[2px] flex items-center justify-center">
                     <div className="px-10 py-5 bg-blue-900/80 rounded-3xl border border-blue-400/30 text-4xl font-black text-white italic tracking-tighter scale-110">
-                      FREEZE!
+                      🧊 FREEZE! 🧊
                     </div>
                   </div>
                 )}
              </div>
+             {/* Bug #6 fix: per-action countdown bar under the Saiman panel */}
+             {running && mode === "action" && (
+               <div className="px-1">
+                 <div className="flex items-center justify-between mb-1">
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Next FREEZE in</span>
+                   <span className="text-[10px] font-bold text-emerald-400">{actionTimeLeft}s</span>
+                 </div>
+                 <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                   <div
+                     className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 energy-bar-fill"
+                     style={{ width: `${(actionTimeLeft / ACTION_DURATION) * 100}%` }}
+                   />
+                 </div>
+               </div>
+             )}
              <p className="text-[11px] text-center text-slate-500 font-semibold tracking-wide uppercase">Watch Saiman closely and mirror the pose</p>
           </div>
 
-          {/* PLAYER PANEL */}
-          <div className="flex flex-col gap-4">
-             <div className="flex items-center justify-between px-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-primary">Your Tracking Log</span>
-                <span className={`flex h-2 w-2 rounded-full ${running ? 'bg-red-500 animate-pulse' : 'bg-slate-600'}`} />
-             </div>
+           {/* PLAYER PANEL */}
+           <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between px-2">
+                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-primary">Your Tracking Log</span>
+                 <div className="flex items-center gap-2">
+                   {/* Bug #10 fix: live pose detection indicator — green = detected, red = lost */}
+                   {running && (
+                     <span className="text-[10px] font-bold" style={{ color: poseDetected ? '#4ade80' : '#f87171' }}>
+                       {poseDetected ? '● Pose OK' : '● Not detected'}
+                     </span>
+                   )}
+                   <span className={`flex h-2 w-2 rounded-full ${running ? 'bg-red-500 animate-pulse' : 'bg-slate-600'}`} />
+                 </div>
+              </div>
              <div className={`relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? 'border-white/10' : 'border-white/5'}`}>
                 <video ref={videoRef} className="object-cover w-full h-full grayscale-[0.2] contrast-[1.1]" autoPlay muted playsInline />
                 {(!cameraReady || !running) && (
@@ -366,7 +511,20 @@ export default function SaimanSaysGame() {
                  </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-col">
+                              
+                {apiError && (
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-red-400 font-semibold">⚠ {apiError}</p>
+                    <button
+                      onClick={retryApiCall}
+                      disabled={apiStatus === "loading"}
+                      className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white font-black text-xs transition duration-300 disabled:opacity-50"
+                    >
+                      {apiStatus === "loading" ? "Retrying..." : "Retry"}
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     if (adhdResult) localStorage.setItem('saimanAdhdResult', JSON.stringify(adhdResult));
