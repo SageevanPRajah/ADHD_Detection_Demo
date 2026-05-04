@@ -7,6 +7,7 @@ import useWebcamRecorder from "../../body posture hooks/webRecorder.js";
 import { sendAdhdVideoTest } from "../../Body posture Utills/api.js";
 
 import ActionVideo from "./ActionVideo.jsx";
+import CameraMirrorPreview from "./CameraMirrorPreview.jsx";
 import { pickAction, FREEZE_VIDEO } from "./GameController.jsx";
 
 /* ================= CONFIG ================= */
@@ -166,7 +167,7 @@ export default function SaimanSaysGame() {
 
       {/* HEADER: NEON GLASSBAR */}
       <header className="sticky top-0 z-50 px-6 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-xl">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mx-auto max-w-7xl">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-clinic-primary/20 rounded-2xl text-clinic-primary shadow-lg shadow-clinic-primary/10">
               <Rocket className="w-6 h-6" />
@@ -179,7 +180,7 @@ export default function SaimanSaysGame() {
 
           <div className="flex items-center gap-6">
             {/* ENERGY METER */}
-            <div className="hidden md:flex flex-col items-end gap-1">
+            <div className="flex-col items-end hidden gap-1 md:flex">
               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <Zap className="w-3 h-3 text-yellow-400" />
                 Session Energy
@@ -194,7 +195,7 @@ export default function SaimanSaysGame() {
 
             <button 
               onClick={() => navigate("/saiman-instructions")} 
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition duration-300 border border-white/5"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold transition duration-300 border text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl border-white/5"
             >
               <LogOut className="w-4 h-4" />
               {t("saiman.exit")}
@@ -204,13 +205,13 @@ export default function SaimanSaysGame() {
       </header>
 
       {/* MAIN GAME CONTAINER */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+      <main className="relative z-10 px-6 py-10 mx-auto max-w-7xl">
         
         {/* GAME STATUS / ACTION BOX */}
         <section className="mb-10 text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-3 mb-6 bg-clinic-primary/10 rounded-3xl border border-clinic-primary/20 backdrop-blur-md">
+          <div className="inline-flex items-center gap-3 px-6 py-3 mb-6 border bg-clinic-primary/10 rounded-3xl border-clinic-primary/20 backdrop-blur-md">
             <Activity className="w-5 h-5 text-clinic-primary animate-pulse" />
-            <span className="text-sm font-bold text-clinic-primary tracking-wide">
+            <span className="text-sm font-bold tracking-wide text-clinic-primary">
               {running ? `ROUND ${roundCount} ACTIVE` : "SYSTEM READY"}
             </span>
           </div>
@@ -219,38 +220,38 @@ export default function SaimanSaysGame() {
             {currentText || t("saiman.getReady") || "Ready to Start?"}
           </h2>
           
-          <div className="flex items-center justify-center gap-10 mt-6 text-slate-400 font-medium">
+          <div className="flex items-center justify-center gap-10 mt-6 font-medium text-slate-400">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-clinic-secondary" />
-              <span className="text-2xl font-mono text-white tracking-widest">{formatTime(timeLeft)}</span>
+              <span className="font-mono text-2xl tracking-widest text-white">{formatTime(timeLeft)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 text-yellow-400" />
-              <span className="text-2xl font-mono text-white tracking-widest">{roundCount}</span>
+              <span className="font-mono text-2xl tracking-widest text-white">{roundCount}</span>
             </div>
           </div>
         </section>
 
         {/* DUAL CAMERA VIEW */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 max-w-[90rem]">
           
           {/* SAIMAN PANEL */}
           <div className="flex flex-col gap-4">
              <div className="flex items-center justify-between px-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-secondary">Saiman's Mission</span>
-                <span className="flex h-2 w-2 rounded-full bg-clinic-secondary animate-ping" />
+                <span className="flex w-2 h-2 rounded-full bg-clinic-secondary animate-ping" />
              </div>
-             <div className={`relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? (mode === 'action' ? 'neon-border-action scale-[1.02]' : 'neon-border-freeze') : 'border-white/5'}`}>
+             <div className={`relative aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? (mode === 'action' ? 'neon-border-action scale-[1.02]' : 'neon-border-freeze') : 'border-white/5'}`}>
                {running ? <ActionVideo src={currentVideo} /> : (
                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/40">
-                    <Globe className="w-16 h-16 text-slate-700 mb-4 animate-spin-slow" />
-                    <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Waiting for Signal...</p>
+                    <Globe className="w-16 h-16 mb-4 text-slate-700 animate-spin-slow" />
+                    <p className="text-xs font-bold tracking-widest uppercase text-slate-500">Waiting for Signal...</p>
                  </div>
                )}
                {/* OVERLAY FOR FREEZE */}
                {mode === "freeze" && running && (
                   <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-[2px] flex items-center justify-center">
-                    <div className="px-10 py-5 bg-blue-900/80 rounded-3xl border border-blue-400/30 text-4xl font-black text-white italic tracking-tighter scale-110">
+                    <div className="px-10 py-5 text-4xl italic font-black tracking-tighter text-white scale-110 border bg-blue-900/80 rounded-3xl border-blue-400/30">
                       FREEZE!
                     </div>
                   </div>
@@ -265,13 +266,13 @@ export default function SaimanSaysGame() {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-primary">Your Tracking Log</span>
                 <span className={`flex h-2 w-2 rounded-full ${running ? 'bg-red-500 animate-pulse' : 'bg-slate-600'}`} />
              </div>
-             <div className={`relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? 'border-white/10' : 'border-white/5'}`}>
+             <div className={`relative aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? 'border-white/10' : 'border-white/5'}`}>
                 <video ref={videoRef} className="object-cover w-full h-full grayscale-[0.2] contrast-[1.1]" autoPlay muted playsInline />
                 {(!cameraReady || !running) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-900/90 backdrop-blur-md">
-                    <Camera className="w-16 h-16 text-clinic-primary mb-6" />
-                    <p className="text-lg font-bold text-white mb-2">{cameraError || t("saiman.pressStart") || "Initialize Biometric Link"}</p>
-                    <p className="text-xs text-slate-500 max-w-xs uppercase tracking-widest leading-relaxed">System requires optical access to analyze posture stability</p>
+                    <Camera className="w-16 h-16 mb-6 text-clinic-primary" />
+                    <p className="mb-2 text-lg font-bold text-white">{cameraError || t("saiman.pressStart") || "Initialize Biometric Link"}</p>
+                    <p className="max-w-xs text-xs leading-relaxed tracking-widest uppercase text-slate-500">System requires optical access to analyze posture stability</p>
                   </div>
                 )}
                 {/* FREEZE OVERLAY FOR PLAYER TOO */}
@@ -284,40 +285,49 @@ export default function SaimanSaysGame() {
 
         </div>
 
+        <section className="flex justify-center mt-12">
+          <CameraMirrorPreview
+            sourceRef={videoRef}
+            isActive={cameraReady}
+            title={t("saiman.cameraReadyTitle") || "Mirror ready for the child"}
+            subtitle={t("saiman.cameraReadySubtitle") || "Press start to enable the live mirror"}
+          />
+        </section>
+
         {/* CONTROL HUB */}
-        <section className="mt-16 flex flex-col items-center gap-10">
+        <section className="flex flex-col items-center gap-10 mt-16">
           <div className="flex flex-wrap justify-center gap-6">
             {!running ? (
               <button 
                 onClick={startSession} 
                 className="group relative flex items-center gap-4 px-12 py-6 bg-clinic-accent hover:bg-emerald-400 text-slate-900 rounded-[2rem] font-black text-2xl transition duration-500 shadow-[0_10px_30px_rgba(34,197,94,0.3)] hover:shadow-[0_15px_45px_rgba(34,197,94,0.5)] transform hover:scale-105 active:scale-95 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                <div className="absolute inset-0 transition-transform duration-500 translate-y-full bg-white/20 group-hover:translate-y-0" />
                 <Play className="w-8 h-8 fill-current translate-z-0" />
-                <span className="relative z-10 uppercase tracking-tight">{t("saiman.startGame") || "Initiate Mission"}</span>
+                <span className="relative z-10 tracking-tight uppercase">{t("saiman.startGame") || "Initiate Mission"}</span>
               </button>
             ) : (
               <button 
                 onClick={endSession} 
                 className="group relative flex items-center gap-4 px-12 py-6 bg-red-500 hover:bg-red-400 text-white rounded-[2rem] font-black text-2xl transition duration-500 shadow-[0_10px_30px_rgba(239,44,44,0.3)] hover:shadow-[0_15px_45px_rgba(239,44,44,0.5)] transform hover:scale-105 active:scale-95 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                <div className="absolute inset-0 transition-transform duration-500 translate-y-full bg-white/10 group-hover:translate-y-0" />
                 <Square className="w-8 h-8 fill-current" />
-                <span className="relative z-10 uppercase tracking-tight">{t("saiman.stop") || "Abort Mission"}</span>
+                <span className="relative z-10 tracking-tight uppercase">{t("saiman.stop") || "Abort Mission"}</span>
               </button>
             )}
           </div>
 
           {/* SECONDARY ACTIONS: GLASS BOX */}
           <div className="w-full max-w-4xl p-6 glass-card rounded-[3rem] shadow-2xl">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
               
               <div className="flex items-center gap-4">
                  <div className="p-3 bg-white/5 rounded-2xl">
                     <Trophy className="w-8 h-8 text-yellow-500" />
                  </div>
                  <div>
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Mission Debriefing</h3>
+                    <h3 className="text-sm font-bold tracking-wider text-white uppercase">Mission Debriefing</h3>
                     <p className="text-xs text-slate-400">Analysis ready after abort or completion</p>
                  </div>
               </div>
@@ -338,7 +348,7 @@ export default function SaimanSaysGame() {
                 <button 
                   onClick={() => lastRecording && triggerDownload(lastRecording)} 
                   disabled={!lastRecording || running}
-                  className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 disabled:opacity-20 transition duration-300"
+                  className="p-4 transition duration-300 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 disabled:opacity-20"
                   title="Download Log Data"
                 >
                   <Download className="w-6 h-6" />
