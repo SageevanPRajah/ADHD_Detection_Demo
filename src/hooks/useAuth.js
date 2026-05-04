@@ -1,15 +1,13 @@
-// hooks/useAuth.js
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { clearStoredAuth, getStoredAuth, saveStoredAuth } from "../utils/authSession.js";
 
 export const useAuth = () => {
-  // read from storage _once_, on initialization
-  const storedUser  = localStorage.getItem("user")  || sessionStorage.getItem("user");
-  const storedToken = localStorage.getItem("token") || sessionStorage.getItem("token");
+  const storedAuth = getStoredAuth();
 
-  const [user, setUser]               = useState(storedUser ? JSON.parse(storedUser) : null);
-  const [token, setToken]             = useState(storedToken || null);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!storedUser && !!storedToken);
+  const [user, setUser] = useState(storedAuth.user);
+  const [token, setToken] = useState(storedAuth.token);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!storedAuth.user && !!storedAuth.token);
 
   // whenever token changes, apply it to axios defaults
   useEffect(() => {
@@ -20,22 +18,16 @@ export const useAuth = () => {
     }
   }, [token]);
 
-  const login = (newToken, userData, rememberMe) => {
-    const store = rememberMe ? localStorage : sessionStorage;
-    store.setItem("token", newToken);
-    store.setItem("user", JSON.stringify(userData));
+  const login = (newToken, userData, rememberMe = true) => {
+    saveStoredAuth(newToken, userData, rememberMe);
 
     setToken(newToken);
     setUser(userData);
     setIsAuthenticated(true);
-    // axios default is set by the effect above
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
+    clearStoredAuth();
 
     setToken(null);
     setUser(null);
