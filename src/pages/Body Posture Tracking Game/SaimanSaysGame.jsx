@@ -1,17 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Rocket, Zap, Clock, Trophy, Camera, Star, LogOut, Play, Square, Activity, Globe, Brain } from "lucide-react";
+import { Rocket, Zap, Clock, Trophy, Camera, Star, LogOut, Play, Square, Download, Activity, Globe } from "lucide-react";
 
 import useWebcamRecorder from "../../body posture hooks/webRecorder.js";
-import usePoseDetector from "../../body posture hooks/usePoseDetector.js";
-import { computeFeatures } from "../../Body posture Utills/featureCompute.js";
-import { sendAdhdFeatures } from "../../Body posture Utills/api.js";
+import { sendAdhdVideoTest } from "../../Body posture Utills/api.js";
 
 import ActionVideo from "./ActionVideo.jsx";
+import CameraMirrorPreview from "./CameraMirrorPreview.jsx";
 import { pickAction, FREEZE_VIDEO } from "./GameController.jsx";
-import CameraMirror from "./CameraMirror.jsx";
 
+/* ================= CONFIG ================= */
 const TOTAL_SESSION_SECONDS = 120;
 const ACTION_DURATION = 12;
 const FREEZE_DURATION = 8;
@@ -30,9 +29,9 @@ const styles = `
     50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
   }
   @keyframes countdownPop {
-    0%   { transform: scale(0.5); opacity: 0; }
-    40%  { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1);   opacity: 1; }
+    0% { transform: scale(0.5); opacity: 0; }
+    40% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
   }
   .countdown-pop { animation: countdownPop 0.4s ease forwards; }
   .neon-border-action { animation: neonPulseAction 2s infinite; border: 2px solid #22c55e; }
@@ -59,63 +58,59 @@ export default function SaimanSaysGame() {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [featureError, setFeatureError] = useState("");
-  // track API errors separately so user can retry
   const [apiError, setApiError] = useState("");
-  //  track round errors
   const [roundError, setRoundError] = useState("");
-
+  const [lastRecording, setLastRecording] = useState(null);
   const [countdown, setCountdown] = useState(null);
-
   const [actionTimeLeft, setActionTimeLeft] = useState(ACTION_DURATION);
+  const [poseDetected, setPoseDetected] = useState(false);
 
-  // Webcam stream (display only — no video recording needed)
-  const { videoRef, setupStream, stopStream } = useWebcamRecorder();
-
-  // Frontend pose detection (runs during the game in real-time)
-  // Bug #10 fix: destructure poseDetected so we can show a live green/red dot
-  const { initPoseDetector, startCollecting, stopCollecting, isReady: poseReady, initError: poseInitError, poseDetected } = usePoseDetector();
+  const { videoRef, setupStream, startRecording, stopRecording, stopStream } = useWebcamRecorder();
 
   const sessionTimerRef = useRef(null);
   const actionTimerRef = useRef(null);
   const cycleTimerRef = useRef(null);
-  const countdownTimerRef = useRef(null);  // Bug #5 fix: ref for countdown interval
-  const actionSubTimerRef = useRef(null);  // Bug #6 fix: ref for per-action sub-timer
-  // Refs to avoid stale closures when endSession is called from a useEffect
-  const roundCountRef = useRef(0);
-  const lastFeaturesRef = useRef(null);
-  const lastRoundsRef = useRef(0);
-
-  // Init MediaPipe PoseLandmarker once on mount
-  useEffect(() => {
-    initPoseDetector();
-  }, [initPoseDetector]);
+  const countdownTimerRef = useRef(null);
+  const actionSubTimerRef = useRef(null);
+  const poseCheckTimerRef = useRef(null);
 
   useEffect(() => {
     if (!running) return;
     sessionTimerRef.current = setInterval(() => {
-      // Bug #1 fix: only decrement inside the state updater — never call async
-      // functions inside a React state updater (it must be pure & synchronous)
-      setTimeLeft((t) => (t <= 1 ? 0 : t - 1));
+      setTimeLeft((t) => {
+        if (t <= 1) { endSession(); return 0; }
+        return t - 1;
+      });
     }, 1000);
     return () => clearInterval(sessionTimerRef.current);
   }, [running]);
 
-  // Bug #1 fix: trigger endSession via a separate effect, not inside setState
   useEffect(() => {
-    if (timeLeft === 0 && running) {
-      endSession();
+    if (!running || !cameraReady) {
+      setPoseDetected(false);
+      return () => {};
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft]);
+
+    const checkPose = () => {
+      const video = videoRef.current;
+      const hasFeed = Boolean(video && video.readyState >= 2);
+      setPoseDetected(hasFeed);
+    };
+
+    checkPose();
+    poseCheckTimerRef.current = setInterval(checkPose, 500);
+
+    return () => clearInterval(poseCheckTimerRef.current);
+  }, [running, cameraReady, videoRef]);
 
   const stopGameLoop = useCallback(() => {
     clearTimeout(actionTimerRef.current);
     clearTimeout(cycleTimerRef.current);
-    clearInterval(actionSubTimerRef.current);  // Bug #6 fix: also clear sub-timer
+    clearInterval(actionSubTimerRef.current);
     actionTimerRef.current = null;
     cycleTimerRef.current = null;
     actionSubTimerRef.current = null;
-    setActionTimeLeft(ACTION_DURATION);        // Bug #6 fix: reset sub-timer display
+    setActionTimeLeft(ACTION_DURATION);
   }, []);
 
   const runRound = useCallback(() => {
@@ -123,10 +118,8 @@ export default function SaimanSaysGame() {
     setCurrentVideo(action.video);
     setCurrentText(action.text);
     setMode("action");
-    // Keep ref in sync so endSession called from a useEffect gets the latest value
-    setRoundCount((r) => { roundCountRef.current = r + 1; return r + 1; });
+    setRoundCount((r) => r + 1);
 
-    // Bug #6 fix: start per-action countdown so the child knows when FREEZE is coming
     setActionTimeLeft(ACTION_DURATION);
     clearInterval(actionSubTimerRef.current);
     actionSubTimerRef.current = setInterval(() => {
@@ -135,7 +128,7 @@ export default function SaimanSaysGame() {
 
     clearTimeout(actionTimerRef.current);
     actionTimerRef.current = setTimeout(() => {
-      clearInterval(actionSubTimerRef.current);  // stop sub-timer on freeze
+      clearInterval(actionSubTimerRef.current);
       setCurrentVideo(FREEZE_VIDEO);
       setCurrentText(t("saiman.freeze") || "FREEZE! 🧊");
       setMode("freeze");
@@ -155,28 +148,24 @@ export default function SaimanSaysGame() {
   const startSession = async () => {
     setTimeLeft(TOTAL_SESSION_SECONDS);
     setRoundCount(0);
-    roundCountRef.current = 0;
     setAdhdResult(null);
     setFeatureError("");
     setApiError("");
     setRoundError("");
-    lastFeaturesRef.current = null;
+    clearInterval(countdownTimerRef.current);
+    setCountdown(null);
 
     const okStream = await setupStream();
     setCameraReady(okStream);
     setCameraError(okStream ? "" : t("saiman.cameraRequired"));
     if (!okStream) return;
 
-    if (!poseReady) {
-      // Bug #9 fix: close the camera stream if we can't start — previously it
-      // stayed open leaving the camera indicator light on with no game running
-      stopStream();
-      setCameraReady(false);
-      setCameraError("Pose detector is still loading, please wait a moment and try again.");
+    const ok = await startRecording();
+    if (!ok) {
+      setCameraError(t("saiman.cameraFailed"));
       return;
     }
 
-    // Bug #5 fix: 3-2-1 countdown before starting so the child can get into position
     setCountdown(3);
     await new Promise((resolve) => {
       let n = 3;
@@ -192,8 +181,6 @@ export default function SaimanSaysGame() {
       }, 1000);
     });
 
-    startCollecting(videoRef.current);
-
     setRunning(true);
     startGameLoop();
   };
@@ -201,68 +188,43 @@ export default function SaimanSaysGame() {
   const endSession = async () => {
     stopGameLoop();
     setRunning(false);
+    clearInterval(countdownTimerRef.current);
 
-    if (roundCountRef.current < 1) {
+    if (roundCount < 1) {
+      await stopRecording();
       stopStream();
       setCameraReady(false);
-      setRoundError("Please complete at least one round before stopping! Press Start and try again.");
+      setRoundError("Please complete at least one round before stopping.");
       return;
     }
 
-    const poseSeq = stopCollecting();
+    const blob = await stopRecording();
+    setLastRecording(blob);
     stopStream();
     setCameraReady(false);
 
-    // Compute features in the browser (JS math, ~5ms)
-    let features;
-    try {
-      features = computeFeatures(poseSeq);
-    } catch (err) {
-      setFeatureError(err.message);
+    if (!blob) {
+      setFeatureError("Recording failed. Please try again.");
       return;
     }
-
-    // Store features so the user can retry if the API call fails
-    lastFeaturesRef.current = features;
-    lastRoundsRef.current = roundCountRef.current;
 
     setApiStatus("loading");
     setApiError("");
-    const response = await sendAdhdFeatures(features, { rounds: roundCountRef.current });
+    const response = await sendAdhdVideoTest(blob, roundCount);
     setApiStatus("idle");
 
-    // detect API failure and surface it to the user instead of
-    // silently leaving the Results button permanently disabled
     if (!response) {
-      setApiError("Could not reach the server. Check your connection and click Retry.");
+      setApiError("Could not reach the server. Please try again.");
       return;
     }
 
-    if (response.adhd_score !== undefined) {
+    if (response && response.result) {
       setAdhdResult({
-        adhd_score: response.adhd_score,
-        adhd_probability: response.adhd_probability,
-        derived_features: response.derived_features,
-      });
-    }
-  };
-
-  
-  const retryApiCall = async () => {
-    if (!lastFeaturesRef.current) return;
-    setApiStatus("loading");
-    setApiError("");
-    const response = await sendAdhdFeatures(lastFeaturesRef.current, { rounds: lastRoundsRef.current });
-    setApiStatus("idle");
-    if (!response) {
-      setApiError("Still can't reach the server. Please try again later.");
-      return;
-    }
-    if (response.adhd_score !== undefined) {
-      setAdhdResult({
-        adhd_score: response.adhd_score,
-        adhd_probability: response.adhd_probability,
-        derived_features: response.derived_features,
+        adhd_score: response.result.adhd_score,
+        adhd_probability: response.result.adhd_probability,
+        subtype: response.result.subtype,
+        derived_features: response.result.derived_features,
+        message: response.message
       });
     }
   };
@@ -270,48 +232,52 @@ export default function SaimanSaysGame() {
   const formatTime = (sec) =>
     `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 
+  const triggerDownload = (blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `adhd-saiman-recording.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const timePercent = (timeLeft / TOTAL_SESSION_SECONDS) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#152663] via-[#2445a3] to-[#345ba3] text-slate-100 font-sans selection:bg-clinic-primary/30">
       <style>{styles}</style>
 
-     
-      {!poseReady && !poseInitError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-900/90 border border-clinic-primary/30 rounded-2xl text-xs text-slate-300 backdrop-blur shadow-xl">
-          <Brain className="w-4 h-4 text-clinic-primary animate-pulse" />
-          Preparing AI pose detector… (first load only)
-        </div>
-      )}
-      {poseInitError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-red-900/80 border border-red-500/40 rounded-2xl text-xs text-red-300 backdrop-blur shadow-xl">
-          ⚠ Pose detector failed to load: {poseInitError}
-        </div>
-      )}
       {featureError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-red-900/80 border border-red-500/40 rounded-2xl text-xs text-red-300 backdrop-blur shadow-xl">
+        <div className="fixed z-50 px-5 py-3 text-xs text-red-300 -translate-x-1/2 border shadow-xl bottom-4 left-1/2 bg-red-900/80 border-red-500/40 rounded-2xl backdrop-blur">
           ⚠ {featureError}
         </div>
       )}
-      {/* Bug #3 fix: show round error */}
       {roundError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-orange-900/80 border border-orange-500/40 rounded-2xl text-xs text-orange-200 backdrop-blur shadow-xl">
+        <div className="fixed z-50 px-5 py-3 text-xs text-orange-200 -translate-x-1/2 border shadow-xl bottom-4 left-1/2 bg-orange-900/80 border-orange-500/40 rounded-2xl backdrop-blur">
           ⚠ {roundError}
+        </div>
+      )}
+      {apiError && (
+        <div className="fixed z-50 px-5 py-3 text-xs text-red-300 -translate-x-1/2 border shadow-xl bottom-4 left-1/2 bg-red-900/80 border-red-500/40 rounded-2xl backdrop-blur">
+          ⚠ {apiError}
         </div>
       )}
       {countdown !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md">
-          <p className="text-white/60 text-lg font-bold uppercase tracking-[0.3em] mb-6">Get Ready!</p>
+          <p className="mb-6 text-lg font-bold tracking-[0.3em] text-white/60 uppercase">Get Ready!</p>
           <span key={countdown} className="countdown-pop text-[12rem] font-black leading-none text-white drop-shadow-[0_0_60px_rgba(99,102,241,0.8)]">
             {countdown}
           </span>
-          <p className="text-white/50 text-sm mt-8 uppercase tracking-widest">Stand in front of the camera</p>
+          <p className="mt-8 text-sm tracking-widest uppercase text-white/50">Stand in front of the camera</p>
         </div>
       )}
 
-
+      {/* HEADER: NEON GLASSBAR */}
       <header className="sticky top-0 z-50 px-6 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-xl">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mx-auto max-w-7xl">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-clinic-primary/20 rounded-2xl text-clinic-primary shadow-lg shadow-clinic-primary/10">
               <Rocket className="w-6 h-6" />
@@ -324,7 +290,7 @@ export default function SaimanSaysGame() {
 
           <div className="flex items-center gap-6">
             {/* ENERGY METER */}
-            <div className="hidden md:flex flex-col items-end gap-1">
+            <div className="flex-col items-end hidden gap-1 md:flex">
               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <Zap className="w-3 h-3 text-yellow-400" />
                 Session Energy
@@ -337,19 +303,9 @@ export default function SaimanSaysGame() {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                if (running) {
-                  stopGameLoop();
-                  stopStream();
-                  clearInterval(sessionTimerRef.current);
-                  clearInterval(countdownTimerRef.current);
-                  setRunning(false);
-                  setCameraReady(false);
-                }
-                navigate("/saiman-instructions");
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition duration-300 border border-white/5"
+            <button 
+              onClick={() => navigate("/saiman-instructions")} 
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold transition duration-300 border text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl border-white/5"
             >
               <LogOut className="w-4 h-4" />
               {t("saiman.exit")}
@@ -358,13 +314,14 @@ export default function SaimanSaysGame() {
         </div>
       </header>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+      {/* MAIN GAME CONTAINER */}
+      <main className="relative z-10 px-6 py-10 mx-auto max-w-7xl">
         
         {/* GAME STATUS / ACTION BOX */}
         <section className="mb-10 text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-3 mb-6 bg-clinic-primary/10 rounded-3xl border border-clinic-primary/20 backdrop-blur-md">
+          <div className="inline-flex items-center gap-3 px-6 py-3 mb-6 border bg-clinic-primary/10 rounded-3xl border-clinic-primary/20 backdrop-blur-md">
             <Activity className="w-5 h-5 text-clinic-primary animate-pulse" />
-            <span className="text-sm font-bold text-clinic-primary tracking-wide">
+            <span className="text-sm font-bold tracking-wide text-clinic-primary">
               {running ? `ROUND ${roundCount} ACTIVE` : "SYSTEM READY"}
             </span>
           </div>
@@ -373,51 +330,50 @@ export default function SaimanSaysGame() {
             {currentText || t("saiman.getReady") || "Ready to Start?"}
           </h2>
           
-          <div className="flex items-center justify-center gap-10 mt-6 text-slate-400 font-medium">
+          <div className="flex items-center justify-center gap-10 mt-6 font-medium text-slate-400">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-clinic-secondary" />
-              <span className="text-2xl font-mono text-white tracking-widest">{formatTime(timeLeft)}</span>
+              <span className="font-mono text-2xl tracking-widest text-white">{formatTime(timeLeft)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 text-yellow-400" />
-              <span className="text-2xl font-mono text-white tracking-widest">{roundCount}</span>
+              <span className="font-mono text-2xl tracking-widest text-white">{roundCount}</span>
             </div>
           </div>
         </section>
 
         {/* DUAL CAMERA VIEW */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 max-w-[90rem]">
           
           {/* SAIMAN PANEL */}
           <div className="flex flex-col gap-4">
              <div className="flex items-center justify-between px-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-secondary">Saiman's Mission</span>
-                <span className="flex h-2 w-2 rounded-full bg-clinic-secondary animate-ping" />
+                <span className="flex w-2 h-2 rounded-full bg-clinic-secondary animate-ping" />
              </div>
-             <div className={`relative rounded-[2rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? (mode === 'action' ? 'neon-border-action scale-[1.02]' : 'neon-border-freeze') : 'border-white/5'}`} style={{ aspectRatio: '4/3', minHeight: '320px' }}>
+             <div className={`relative aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? (mode === 'action' ? 'neon-border-action scale-[1.02]' : 'neon-border-freeze') : 'border-white/5'}`}>
                {running ? <ActionVideo src={currentVideo} /> : (
                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/40">
-                    <Globe className="w-16 h-16 text-slate-700 mb-4 animate-spin-slow" />
-                    <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Waiting for Signal...</p>
+                    <Globe className="w-16 h-16 mb-4 text-slate-700 animate-spin-slow" />
+                    <p className="text-xs font-bold tracking-widest uppercase text-slate-500">Waiting for Signal...</p>
                  </div>
                )}
                {/* OVERLAY FOR FREEZE */}
                {mode === "freeze" && running && (
                   <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-[2px] flex items-center justify-center">
-                    <div className="px-10 py-5 bg-blue-900/80 rounded-3xl border border-blue-400/30 text-4xl font-black text-white italic tracking-tighter scale-110">
+                    <div className="px-10 py-5 text-4xl italic font-black tracking-tighter text-white scale-110 border bg-blue-900/80 rounded-3xl border-blue-400/30">
                       🧊 FREEZE! 🧊
                     </div>
                   </div>
                 )}
              </div>
-             {/* Bug #6 fix: per-action countdown bar under the Saiman panel */}
              {running && mode === "action" && (
                <div className="px-1">
                  <div className="flex items-center justify-between mb-1">
                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Next FREEZE in</span>
                    <span className="text-[10px] font-bold text-emerald-400">{actionTimeLeft}s</span>
                  </div>
-                 <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                 <div className="w-full h-2 overflow-hidden rounded-full bg-slate-800">
                    <div
                      className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 energy-bar-fill"
                      style={{ width: `${(actionTimeLeft / ACTION_DURATION) * 100}%` }}
@@ -425,30 +381,29 @@ export default function SaimanSaysGame() {
                  </div>
                </div>
              )}
-             <p className="text-[11px] text-center text-slate-200 font-semibold tracking-wide uppercase">Watch Saiman closely and mirror the pose</p>
+             <p className="text-[11px] text-center  font-semibold tracking-wide uppercase">Watch Saiman closely and mirror the pose</p>
           </div>
 
-           {/* PLAYER PANEL */}
-           <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between px-2">
-                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-primary">Your Tracking Log</span>
-                 <div className="flex items-center gap-2">
-                   {/* Bug #10 fix: live pose detection indicator — green = detected, red = lost */}
-                   {running && (
-                     <span className="text-[10px] font-bold" style={{ color: poseDetected ? '#4ade80' : '#f87171' }}>
-                       {poseDetected ? '● Pose OK' : '● Not detected'}
-                     </span>
-                   )}
-                   <span className={`flex h-2 w-2 rounded-full ${running ? 'bg-red-500 animate-pulse' : 'bg-slate-600'}`} />
-                 </div>
-              </div>
-             <div className={`relative rounded-[2rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? 'border-white/10' : 'border-white/5'}`} style={{ aspectRatio: '4/3', minHeight: '320px' }}>
+          {/* PLAYER PANEL */}
+          <div className="flex flex-col gap-4">
+             <div className="flex items-center justify-between px-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-primary">Your Tracking Log</span>
+                <div className="flex items-center gap-2">
+                  {running && (
+                    <span className="text-[10px] font-bold" style={{ color: poseDetected ? "#4ade80" : "#f87171" }}>
+                      {poseDetected ? "● Pose OK" : "● Not detected"}
+                    </span>
+                  )}
+                  <span className={`flex h-2 w-2 rounded-full ${running ? 'bg-red-500 animate-pulse' : 'bg-slate-600'}`} />
+                </div>
+             </div>
+             <div className={`relative aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? 'border-white/10' : 'border-white/5'}`}>
                 <video ref={videoRef} className="object-cover w-full h-full grayscale-[0.2] contrast-[1.1]" autoPlay muted playsInline />
                 {(!cameraReady || !running) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-900/90 backdrop-blur-md">
-                    <Camera className="w-16 h-16 text-clinic-primary mb-6" />
-                    <p className="text-lg font-bold text-white mb-2">{cameraError || t("saiman.pressStart") || "Initialize Biometric Link"}</p>
-                    <p className="text-xs text-slate-500 max-w-xs uppercase tracking-widest leading-relaxed">System requires optical access to analyze posture stability</p>
+                    <Camera className="w-16 h-16 mb-6 text-clinic-primary" />
+                    <p className="mb-2 text-lg font-bold text-white">{cameraError || t("saiman.pressStart") || "Initialize Biometric Link"}</p>
+                    <p className="max-w-xs text-xs leading-relaxed tracking-widest uppercase text-slate-500">System requires optical access to analyze posture stability</p>
                   </div>
                 )}
                 {/* FREEZE OVERLAY FOR PLAYER TOO */}
@@ -456,67 +411,59 @@ export default function SaimanSaysGame() {
                   <div className="absolute inset-0 bg-blue-900/30 backdrop-blur-[4px] ring-inset ring-[20px] ring-blue-500/20 transition-all" />
                 )}
              </div>
-             <p className="text-[11px] text-center text-slate-200 font-semibold tracking-wide uppercase">Stay centered in the grid for accurate data</p>
+             <p className="text-[11px] text-center  font-semibold tracking-wide uppercase">Stay centered in the grid for accurate data</p>
           </div>
 
         </div>
 
+        <section className="flex justify-center mt-12">
+          <CameraMirrorPreview
+            sourceRef={videoRef}
+            isActive={cameraReady}
+            title={t("saiman.cameraReadyTitle") || "Mirror ready for the child"}
+            subtitle={t("saiman.cameraReadySubtitle") || "Press start to enable the live mirror"}
+          />
+        </section>
+
         {/* CONTROL HUB */}
-        <section className="mt-16 flex flex-col items-center gap-10">
-
-          {/* Camera Mirror — lets the child check their position before starting */}
-          <CameraMirror disabled={running} />
-
+        <section className="flex flex-col items-center gap-10 mt-16">
           <div className="flex flex-wrap justify-center gap-6">
             {!running ? (
               <button 
                 onClick={startSession} 
                 className="group relative flex items-center gap-4 px-12 py-6 bg-clinic-accent hover:bg-emerald-400 text-slate-900 rounded-[2rem] font-black text-2xl transition duration-500 shadow-[0_10px_30px_rgba(34,197,94,0.3)] hover:shadow-[0_15px_45px_rgba(34,197,94,0.5)] transform hover:scale-105 active:scale-95 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                <div className="absolute inset-0 transition-transform duration-500 translate-y-full bg-white/20 group-hover:translate-y-0" />
                 <Play className="w-8 h-8 fill-current translate-z-0" />
-                <span className="relative z-10 uppercase tracking-tight">{t("saiman.startGame") || "Initiate Mission"}</span>
+                <span className="relative z-10 tracking-tight uppercase">{t("saiman.startGame") || "Initiate Mission"}</span>
               </button>
             ) : (
               <button 
                 onClick={endSession} 
                 className="group relative flex items-center gap-4 px-12 py-6 bg-red-500 hover:bg-red-400 text-white rounded-[2rem] font-black text-2xl transition duration-500 shadow-[0_10px_30px_rgba(239,44,44,0.3)] hover:shadow-[0_15px_45px_rgba(239,44,44,0.5)] transform hover:scale-105 active:scale-95 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                <div className="absolute inset-0 transition-transform duration-500 translate-y-full bg-white/10 group-hover:translate-y-0" />
                 <Square className="w-8 h-8 fill-current" />
-                <span className="relative z-10 uppercase tracking-tight">{t("saiman.stop") || "Abort Mission"}</span>
+                <span className="relative z-10 tracking-tight uppercase">{t("saiman.stop") || "Abort Mission"}</span>
               </button>
             )}
           </div>
 
           {/* SECONDARY ACTIONS: GLASS BOX */}
           <div className="w-full max-w-4xl p-6 glass-card rounded-[3rem] shadow-2xl">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
               
               <div className="flex items-center gap-4">
                  <div className="p-3 bg-white/5 rounded-2xl">
                     <Trophy className="w-8 h-8 text-yellow-500" />
                  </div>
                  <div>
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Mission Debriefing</h3>
+                    <h3 className="text-sm font-bold tracking-wider text-white uppercase">Mission Debriefing</h3>
                     <p className="text-xs text-slate-400">Analysis ready after abort or completion</p>
                  </div>
               </div>
 
-              <div className="flex items-center gap-3 flex-col">
-                              
-                {apiError && (
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-red-400 font-semibold">⚠ {apiError}</p>
-                    <button
-                      onClick={retryApiCall}
-                      disabled={apiStatus === "loading"}
-                      className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white font-black text-xs transition duration-300 disabled:opacity-50"
-                    >
-                      {apiStatus === "loading" ? "Retrying..." : "Retry"}
-                    </button>
-                  </div>
-                )}
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
                     if (adhdResult) localStorage.setItem('saimanAdhdResult', JSON.stringify(adhdResult));
@@ -526,7 +473,16 @@ export default function SaimanSaysGame() {
                   disabled={!adhdResult || apiStatus === "loading"}
                 >
                   {apiStatus === "loading" ? <Star className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
-                  {apiStatus === "loading" ? "Analyzing..." : t("saiman.viewResult")}
+                  {apiStatus === "loading" ? t("saiman.analyzing") : t("saiman.viewResult")}
+                </button>
+
+                <button 
+                  onClick={() => lastRecording && triggerDownload(lastRecording)} 
+                  disabled={!lastRecording || running}
+                  className="p-4 transition duration-300 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 disabled:opacity-20"
+                  title="Download Log Data"
+                >
+                  <Download className="w-6 h-6" />
                 </button>
               </div>
 

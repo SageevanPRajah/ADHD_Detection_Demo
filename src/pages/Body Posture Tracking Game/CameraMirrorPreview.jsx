@@ -31,15 +31,13 @@ export default function CameraMirror({ disabled = false }) {
   if (disabled) return null;
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto">
+    <div className="flex flex-col items-center w-full max-w-sm gap-4 mx-auto">
 
       {/* Toggle button */}
       {!open ? (
         <button
           onClick={openCamera}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-900 hover:bg-blue-600
-                     text-white font-bold text-sm transition-all hover:scale-105 active:scale-95
-                     shadow-lg shadow"
+          className="flex items-center gap-2 px-6 py-3 text-sm font-bold text-white transition-all bg-blue-900 shadow shadow-lg rounded-2xl hover:bg-blue-600 hover:scale-105 active:scale-95"
         >
           <Camera className="w-4 h-4" />
           Check My Position 📷
@@ -47,27 +45,25 @@ export default function CameraMirror({ disabled = false }) {
       ) : (
         <div className="w-full">
           {/* Header */}
-          <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-xs font-bold text-indigo-300 uppercase tracking-widest">
+          <div className="flex items-center justify-between px-1 mb-2">
+            <span className="text-xs font-bold tracking-widest text-indigo-300 uppercase">
               📷 Mirror Preview
             </span>
             <button
               onClick={closeCamera}
-              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white/10
-                         hover:bg-red-500/30 text-slate-300 hover:text-red-300
-                         text-xs font-bold transition-all"
+              className="flex items-center gap-1 px-3 py-1 text-xs font-bold transition-all rounded-lg bg-white/10 hover:bg-red-500/30 text-slate-300 hover:text-red-300"
             >
               <X className="w-3 h-3" /> Close
             </button>
           </div>
 
-          <div className="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-indigo-500/40"
+          <div className="relative overflow-hidden border-2 rounded-2xl bg-slate-900 border-indigo-500/40"
                style={{ aspectRatio: "4/3" }}>
             {error ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
-                <p className="text-red-400 text-sm font-semibold">{error}</p>
+                <p className="text-sm font-semibold text-red-400">{error}</p>
                 <button onClick={openCamera}
-                  className="px-4 py-2 rounded-xl bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400">
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-500 rounded-xl hover:bg-indigo-400">
                   Try Again
                 </button>
               </div>
@@ -75,7 +71,7 @@ export default function CameraMirror({ disabled = false }) {
               <video
                 ref={videoRef}
                 autoPlay muted playsInline
-                className="w-full h-full object-cover"
+                className="object-cover w-full h-full"
                 style={{ transform: "scaleX(-1)" }}
               />
             )}
