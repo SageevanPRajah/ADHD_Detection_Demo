@@ -3,9 +3,7 @@ import { useEffect, useRef, useState } from "react";
 /**
  * useHandwritingCanvas
  *
- * Encapsulates all canvas state, refs, drawing logic, and effects.
- * Returns everything the parent needs to wire up the canvas element
- * and respond to drawing events.
+ *
  *
  * @param {object} params
  * @param {boolean} params.gameStarted
