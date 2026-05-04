@@ -57,6 +57,7 @@ export default function SaimanSaysGame() {
 
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
+
   const [featureError, setFeatureError] = useState("");
   const [apiError, setApiError] = useState("");
   const [roundError, setRoundError] = useState("");
@@ -64,6 +65,8 @@ export default function SaimanSaysGame() {
   const [countdown, setCountdown] = useState(null);
   const [actionTimeLeft, setActionTimeLeft] = useState(ACTION_DURATION);
   const [poseDetected, setPoseDetected] = useState(false);
+
+
 
   const { videoRef, setupStream, startRecording, stopRecording, stopStream } = useWebcamRecorder();
 
