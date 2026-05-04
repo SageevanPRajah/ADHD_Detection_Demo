@@ -381,7 +381,7 @@ export default function SaimanSaysGame() {
                  </div>
                </div>
              )}
-             <p className="text-[11px] text-center text-slate-500 font-semibold tracking-wide uppercase">Watch Saiman closely and mirror the pose</p>
+             <p className="text-[11px] text-center  font-semibold tracking-wide uppercase">Watch Saiman closely and mirror the pose</p>
           </div>
 
           {/* PLAYER PANEL */}
@@ -411,7 +411,7 @@ export default function SaimanSaysGame() {
                   <div className="absolute inset-0 bg-blue-900/30 backdrop-blur-[4px] ring-inset ring-[20px] ring-blue-500/20 transition-all" />
                 )}
              </div>
-             <p className="text-[11px] text-center text-slate-500 font-semibold tracking-wide uppercase">Stay centered in the grid for accurate data</p>
+             <p className="text-[11px] text-center  font-semibold tracking-wide uppercase">Stay centered in the grid for accurate data</p>
           </div>
 
         </div>
