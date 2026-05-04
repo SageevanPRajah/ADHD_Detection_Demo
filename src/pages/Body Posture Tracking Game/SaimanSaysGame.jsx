@@ -10,8 +10,8 @@ import { sendAdhdFeatures } from "../../Body posture Utills/api.js";
 
 import ActionVideo from "./ActionVideo.jsx";
 import { pickAction, FREEZE_VIDEO } from "./GameController.jsx";
+import CameraMirror from "./CameraMirror.jsx";
 
-/* ================= CONFIG ================= */
 const TOTAL_SESSION_SECONDS = 120;
 const ACTION_DURATION = 12;
 const FREEZE_DURATION = 8;
@@ -29,7 +29,6 @@ const styles = `
     0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
     50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
   }
-  /* Bug #5 fix: countdown animation */
   @keyframes countdownPop {
     0%   { transform: scale(0.5); opacity: 0; }
     40%  { transform: scale(1.2); opacity: 1; }
@@ -60,13 +59,13 @@ export default function SaimanSaysGame() {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [featureError, setFeatureError] = useState("");
-  // Bug #2 fix: track API errors separately so user can retry
+  // track API errors separately so user can retry
   const [apiError, setApiError] = useState("");
-  // Bug #3 fix: track round errors
+  //  track round errors
   const [roundError, setRoundError] = useState("");
-  // Bug #5 fix: 3-2-1 countdown state (null = not counting, 3/2/1 = counting)
+
   const [countdown, setCountdown] = useState(null);
-  // Bug #6 fix: track time remaining in the current action phase
+
   const [actionTimeLeft, setActionTimeLeft] = useState(ACTION_DURATION);
 
   // Webcam stream (display only — no video recording needed)
@@ -193,7 +192,6 @@ export default function SaimanSaysGame() {
       }, 1000);
     });
 
-    // Start real-time pose collection from the webcam video element
     startCollecting(videoRef.current);
 
     setRunning(true);
@@ -204,7 +202,6 @@ export default function SaimanSaysGame() {
     stopGameLoop();
     setRunning(false);
 
-    // Bug #3 fix: guard against zero-round sessions that would crash featureCompute
     if (roundCountRef.current < 1) {
       stopStream();
       setCameraReady(false);
@@ -245,13 +242,12 @@ export default function SaimanSaysGame() {
       setAdhdResult({
         adhd_score: response.adhd_score,
         adhd_probability: response.adhd_probability,
-        subtype: response.subtype,
         derived_features: response.derived_features,
       });
     }
   };
 
-  // Bug #2 fix: retry function uses stored features so the user doesn't need to replay
+  
   const retryApiCall = async () => {
     if (!lastFeaturesRef.current) return;
     setApiStatus("loading");
@@ -266,7 +262,6 @@ export default function SaimanSaysGame() {
       setAdhdResult({
         adhd_score: response.adhd_score,
         adhd_probability: response.adhd_probability,
-        subtype: response.subtype,
         derived_features: response.derived_features,
       });
     }
@@ -275,16 +270,13 @@ export default function SaimanSaysGame() {
   const formatTime = (sec) =>
     `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 
-  // Bug #4 fix: triggerDownload removed — it was dead code never called anywhere.
-  // Video recording is no longer used in this flow (features come from MediaPipe directly).
-
   const timePercent = (timeLeft / TOTAL_SESSION_SECONDS) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#152663] via-[#2445a3] to-[#345ba3] text-slate-100 font-sans selection:bg-clinic-primary/30">
       <style>{styles}</style>
 
-      {/* MediaPipe loading / error banner */}
+     
       {!poseReady && !poseInitError && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-900/90 border border-clinic-primary/30 rounded-2xl text-xs text-slate-300 backdrop-blur shadow-xl">
           <Brain className="w-4 h-4 text-clinic-primary animate-pulse" />
@@ -307,7 +299,6 @@ export default function SaimanSaysGame() {
           ⚠ {roundError}
         </div>
       )}
-      {/* Bug #5 fix: full-screen 3-2-1 countdown overlay */}
       {countdown !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md">
           <p className="text-white/60 text-lg font-bold uppercase tracking-[0.3em] mb-6">Get Ready!</p>
@@ -319,7 +310,6 @@ export default function SaimanSaysGame() {
       )}
 
 
-      {/* HEADER: NEON GLASSBAR */}
       <header className="sticky top-0 z-50 px-6 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-xl">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
@@ -347,7 +337,6 @@ export default function SaimanSaysGame() {
               </div>
             </div>
 
-            {/* Bug #7 fix: Exit cleans up camera + timers before navigating away */}
             <button
               onClick={() => {
                 if (running) {
@@ -369,7 +358,6 @@ export default function SaimanSaysGame() {
         </div>
       </header>
 
-      {/* MAIN GAME CONTAINER */}
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
         
         {/* GAME STATUS / ACTION BOX */}
@@ -398,7 +386,7 @@ export default function SaimanSaysGame() {
         </section>
 
         {/* DUAL CAMERA VIEW */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* SAIMAN PANEL */}
           <div className="flex flex-col gap-4">
@@ -406,7 +394,7 @@ export default function SaimanSaysGame() {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-clinic-secondary">Saiman's Mission</span>
                 <span className="flex h-2 w-2 rounded-full bg-clinic-secondary animate-ping" />
              </div>
-             <div className={`relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? (mode === 'action' ? 'neon-border-action scale-[1.02]' : 'neon-border-freeze') : 'border-white/5'}`}>
+             <div className={`relative rounded-[2rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? (mode === 'action' ? 'neon-border-action scale-[1.02]' : 'neon-border-freeze') : 'border-white/5'}`} style={{ aspectRatio: '4/3', minHeight: '320px' }}>
                {running ? <ActionVideo src={currentVideo} /> : (
                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/40">
                     <Globe className="w-16 h-16 text-slate-700 mb-4 animate-spin-slow" />
@@ -437,7 +425,7 @@ export default function SaimanSaysGame() {
                  </div>
                </div>
              )}
-             <p className="text-[11px] text-center text-slate-500 font-semibold tracking-wide uppercase">Watch Saiman closely and mirror the pose</p>
+             <p className="text-[11px] text-center text-slate-200 font-semibold tracking-wide uppercase">Watch Saiman closely and mirror the pose</p>
           </div>
 
            {/* PLAYER PANEL */}
@@ -454,7 +442,7 @@ export default function SaimanSaysGame() {
                    <span className={`flex h-2 w-2 rounded-full ${running ? 'bg-red-500 animate-pulse' : 'bg-slate-600'}`} />
                  </div>
               </div>
-             <div className={`relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? 'border-white/10' : 'border-white/5'}`}>
+             <div className={`relative rounded-[2rem] overflow-hidden bg-slate-900 border-4 transition-all duration-700 ${running ? 'border-white/10' : 'border-white/5'}`} style={{ aspectRatio: '4/3', minHeight: '320px' }}>
                 <video ref={videoRef} className="object-cover w-full h-full grayscale-[0.2] contrast-[1.1]" autoPlay muted playsInline />
                 {(!cameraReady || !running) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-900/90 backdrop-blur-md">
@@ -468,13 +456,17 @@ export default function SaimanSaysGame() {
                   <div className="absolute inset-0 bg-blue-900/30 backdrop-blur-[4px] ring-inset ring-[20px] ring-blue-500/20 transition-all" />
                 )}
              </div>
-             <p className="text-[11px] text-center text-slate-500 font-semibold tracking-wide uppercase">Stay centered in the grid for accurate data</p>
+             <p className="text-[11px] text-center text-slate-200 font-semibold tracking-wide uppercase">Stay centered in the grid for accurate data</p>
           </div>
 
         </div>
 
         {/* CONTROL HUB */}
         <section className="mt-16 flex flex-col items-center gap-10">
+
+          {/* Camera Mirror — lets the child check their position before starting */}
+          <CameraMirror disabled={running} />
+
           <div className="flex flex-wrap justify-center gap-6">
             {!running ? (
               <button 
