@@ -7,6 +7,7 @@ import axios from "axios";
 
 import { AuthEndPoint } from "../utils/ApiRequest.js";
 import { useAuth } from "../hooks/useAuth.js";
+import { getStoredAuth } from "../utils/authSession.js";
 
 const fieldBase =
   "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-clinic-primary/50 focus:bg-white/10 transition-all";
@@ -14,15 +15,57 @@ const fieldBase =
 const SpiderMenu = () => {
   const [active, setActive] = React.useState(null);
   const [loginError, setLoginError] = React.useState("");
+  const [roleSwitchPrompt, setRoleSwitchPrompt] = React.useState(null);
   const menuRef = React.useRef(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
+  const storedAuth = getStoredAuth();
   const roleRoutes = {
     ADMIN: "/admin",
     DOCTOR: "/doctor",
     PATIENT_PARENT: "/parent",
     GUEST: "/guest",
+  };
+
+  const roleByLegId = {
+    admin: "ADMIN",
+    doctor: "DOCTOR",
+    parent: "PATIENT_PARENT",
+    guest: "GUEST",
+  };
+
+  const handleRoleClick = (legId) => {
+    const storedRole = storedAuth?.user?.role;
+    const expectedRole = roleByLegId[legId];
+
+    if (storedAuth.token && storedRole === expectedRole) {
+      navigate(roleRoutes[storedRole] || "/");
+      setActive(null);
+      setRoleSwitchPrompt(null);
+      return;
+    }
+
+    if (storedAuth.token && storedRole && storedRole !== expectedRole) {
+      setRoleSwitchPrompt({ legId, expectedRole });
+      setActive(null);
+      return;
+    }
+
+    setActive((current) => (current === legId ? null : legId));
+  };
+
+  const handleLogoutAndSwitchRole = () => {
+    if (!roleSwitchPrompt) return;
+
+    logout();
+    setLoginError("");
+    setActive(roleSwitchPrompt.legId);
+    setRoleSwitchPrompt(null);
+  };
+
+  const handleCancelRoleSwitch = () => {
+    setRoleSwitchPrompt(null);
   };
 
   const handleAuthSuccess = (response, fallbackPath) => {
@@ -150,6 +193,35 @@ const SpiderMenu = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-10 md:flex-row md:items-stretch">
+      {roleSwitchPrompt && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-clinic-surfaceDark p-6 shadow-2xl shadow-black/60">
+            <p className="text-sm font-semibold text-white">Logout required</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">
+              You are already logged in with another role. Please logout first to continue with the {t(roleByLegId[roleSwitchPrompt.legId] ? `spider.${roleSwitchPrompt.legId}Login` : "spider.login") || roleSwitchPrompt.legId} role.
+            </p>
+            <p className="mt-3 text-[11px] text-slate-400">
+              Logout now to continue, or cancel and stay on the current session.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={handleLogoutAndSwitchRole}
+                className="flex-1 rounded-xl bg-red-500 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-red-400"
+              >
+                Logout
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelRoleSwitch}
+                className="flex-1 rounded-xl border border-slate-600 bg-white/5 px-4 py-2.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/10"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <section className="flex-1 space-y-4">
         <p className="inline-flex rounded-full bg-clinic-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-clinic-primary">
           {t("spider.calmClinic")}
@@ -195,7 +267,7 @@ const SpiderMenu = () => {
                 <button
                   type="button"
                   className={`relative flex h-16 w-16 items-center justify-center rounded-full border border-slate-700 bg-clinic-surfaceDark text-slate-100 shadow-xl transition-transform hover:scale-105 ${leg.accent} bg-opacity-10 backdrop-blur`}
-                  onClick={() => setActive((current) => (current === leg.id ? null : leg.id))}
+                  onClick={() => handleRoleClick(leg.id)}
                 >
                   <Icon className="h-6 w-6" />
                   <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-medium text-slate-200">
