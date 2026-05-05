@@ -439,6 +439,8 @@ const GuestLoginPanel = ({ onGuestGoogle, globalError, setGlobalError }) => {
       <div className="space-y-3">
         <div className="rounded-xl bg-white/5 p-3">
           <GoogleLogin
+            use_fedcm_for_button
+            use_fedcm_for_prompt
             onSuccess={async (credentialResponse) => {
               try {
                 setError("");
