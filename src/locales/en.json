@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "ADHD Care Portal",
     "subtitle": "Early screening & guidance",
-    "role": "Role"
+    "role": "Role",
+    "logout": "Logout"
   },
   "langSwitch": { "en": "EN", "si": "සිං" },
   "home": {
