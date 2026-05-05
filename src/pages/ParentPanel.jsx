@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Dashboard from "../components/Dashboard.jsx";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -6,23 +6,45 @@ import {
   ArrowLeft, Activity, Calendar, Clock, BookOpen,
   MessageCircle, HelpCircle, FileText, CheckCircle2, TrendingUp, Sparkles, AlertCircle
 } from "lucide-react";
+import axios from "axios";
+
+import { AuthEndPoint } from "../utils/ApiRequest.js";
+import { authHeaders } from "../utils/authSession.js";
+import { normalizeApiRecord } from "../utils/apiNormalize.js";
 
 const ParentPanel = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Mock data for the demonstration
   const recentTrials = [
     { date: "Oct 24, 2025", type: "Eye Tracking", score: 85, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
     { date: "Oct 22, 2025", type: "Voice Analysis", score: 72, color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
     { date: "Oct 20, 2025", type: "Posture Tracking", score: 68, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" }
   ];
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const { data } = await axios.get(`${AuthEndPoint}/parent/me`, { headers: authHeaders() });
+        setProfile(normalizeApiRecord(data));
+      } catch (requestError) {
+        setError(requestError?.response?.data?.detail || "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
   return (
     <Dashboard roleLabel={t("parent.dashboard")}>
       <div className="font-sans flex flex-col gap-6 max-w-6xl mx-auto mt-2 pb-8 animate-adhdSnap">
-
-        {/* Back Button & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
@@ -32,11 +54,16 @@ const ParentPanel = () => {
               <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-white group-hover:-translate-x-0.5 transition-all" />
             </button>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-bold text-white tracking-tight">Parent Portal</h1>
                 <span className="bg-clinic-primary/20 border border-clinic-primary/30 text-clinic-primary text-[10px] font-bold px-2 py-0.5 rounded-full mt-1">
-                  Child: Niru
+                  {profile?.parentId || profile?.parent_id || "Parent ID pending"}
                 </span>
+                {profile?.childName && (
+                  <span className="bg-clinic-secondary/20 border border-clinic-secondary/30 text-clinic-secondary text-[10px] font-bold px-2 py-0.5 rounded-full mt-1">
+                    Child: {profile.childName}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400">Track your child's progress, view reports, and connect with their doctor.</p>
             </div>
@@ -50,7 +77,9 @@ const ParentPanel = () => {
           </div>
         </div>
 
-        {/* Welcome Hero Card */}
+        {loading && <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-300">Loading parent profile...</div>}
+        {error && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>}
+
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/40 to-slate-900 p-6 md:p-8 shadow-2xl">
           <div className="absolute top-[-50%] right-[-10%] w-[50%] h-[150%] rounded-full bg-indigo-500/10 blur-[80px] pointer-events-none"></div>
 
@@ -60,10 +89,10 @@ const ParentPanel = () => {
                 <Sparkles className="w-3.5 h-3.5" /> Weekly Summary Ready
               </div>
               <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-2 leading-tight">
-                Niru is showing a <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">14% improvement</span> in saccade focus!
+                {profile?.childName || profile?.child_name || "Your child"} is being tracked through the ADHD assessment portal.
               </h2>
               <p className="text-sm text-slate-300 leading-relaxed">
-                Based on this week's 3 completed trials, the clinical engine detected significant improvements in continuous visual attention compared to last month. Keep up the excellent work with the home exercises.
+                {profile?.doctor ? `Assigned doctor: ${profile.doctor.fullName || profile.doctor.full_name} (${profile.doctor.specialization || "Specialist"})` : "Assigned doctor details will appear here once available."}
               </p>
             </div>
 
@@ -79,10 +108,7 @@ const ParentPanel = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-[1.6fr,1.4fr]">
-
-          {/* Main Activity Column */}
           <section className="flex flex-col gap-6">
-
             <div className="rounded-3xl border border-slate-700/60 bg-gradient-to-b from-clinic-surfaceDark to-slate-900 p-6 shadow-xl relative overflow-hidden">
               <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-clinic-secondary" />
@@ -91,12 +117,12 @@ const ParentPanel = () => {
 
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="bg-black/40 border border-slate-800 p-3 rounded-2xl flex flex-col justify-center items-center text-center group hover:border-blue-500/30 transition-colors">
-                  <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 mb-1">Trials Completed</p>
-                  <p className="text-3xl font-black text-white group-hover:text-blue-400 transition-colors">12</p>
+                  <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 mb-1">Parent</p>
+                  <p className="text-3xl font-black text-white group-hover:text-blue-400 transition-colors">{profile?.fullName ? profile.fullName.split(" ")[0] : profile?.full_name ? profile.full_name.split(" ")[0] : "N/A"}</p>
                 </div>
                 <div className="bg-black/40 border border-slate-800 p-3 rounded-2xl flex flex-col justify-center items-center text-center group hover:border-emerald-500/30 transition-colors">
-                  <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 mb-1">Current Streak</p>
-                  <p className="text-3xl font-black text-white group-hover:text-emerald-400 transition-colors flex items-center gap-1">4 <span className="text-sm text-slate-500 font-normal">Wks</span></p>
+                  <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 mb-1">Child</p>
+                  <p className="text-3xl font-black text-white group-hover:text-emerald-400 transition-colors flex items-center gap-1">{profile?.childName || profile?.child_name || "N/A"}</p>
                 </div>
               </div>
 
@@ -123,7 +149,6 @@ const ParentPanel = () => {
               </div>
             </div>
 
-            {/* Doctor Messages */}
             <div className="rounded-3xl border border-slate-700/60 bg-clinic-surfaceDark p-6 shadow-xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-5">
                 <MessageCircle className="w-24 h-24" />
@@ -136,15 +161,15 @@ const ParentPanel = () => {
               <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-2xl relative z-10">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30 flex-shrink-0">
-                    <span className="text-amber-500 font-bold text-xs">Dr. M</span>
+                    <span className="text-amber-500 font-bold text-xs">Dr</span>
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-bold text-white">Dr. Maya Fernando</p>
+                      <p className="text-xs font-bold text-white">{profile?.doctor?.fullName || profile?.doctor?.full_name || "Assigned Doctor"}</p>
                       <p className="text-[10px] text-slate-500">Yesterday, 4:30 PM</p>
                     </div>
                     <p className="text-xs text-amber-200/90 leading-relaxed bg-black/20 p-3 rounded-xl rounded-tl-none border border-amber-500/10">
-                      "Hi Lakshmi, I reviewed Niru's latest eye tracking data. The saccade shifts are looking much smoother! Let's keep focusing on the handwriting game this weekend. See you on the 12th."
+                      {profile?.doctor ? `Assigned doctor: ${profile.doctor.fullName || profile.doctor.full_name} (${profile.doctor.medicalCouncilId || profile.doctor.medical_council_id || "License pending"})` : "Doctor communication will appear here once the account is assigned."}
                     </p>
                     <button className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mt-2 hover:text-amber-400 transition-colors">
                       Reply to Doctor
@@ -153,13 +178,9 @@ const ParentPanel = () => {
                 </div>
               </div>
             </div>
-
           </section>
 
-          {/* Guidelines Sidebar */}
           <aside className="space-y-6">
-
-            {/* Next Steps Module */}
             <div className="rounded-3xl bg-gradient-to-br from-emerald-900/30 to-slate-900 p-6 shadow-xl border border-emerald-500/20 relative overflow-hidden">
               <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-emerald-500/10 blur-[40px] rounded-full pointer-events-none"></div>
 
@@ -194,7 +215,6 @@ const ParentPanel = () => {
               </button>
             </div>
 
-            {/* Help / Resources */}
             <div className="rounded-3xl bg-slate-900 p-6 shadow-xl border border-slate-800">
               <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4">
                 <HelpCircle className="w-4 h-4 text-blue-400" />
@@ -214,7 +234,6 @@ const ParentPanel = () => {
                 </a>
               </div>
             </div>
-
           </aside>
         </div>
       </div>

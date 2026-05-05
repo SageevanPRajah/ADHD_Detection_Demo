@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Dashboard from "../components/Dashboard.jsx";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -6,39 +6,98 @@ import {
   Search, Eye, UserPlus, Send, Activity, EyeIcon, Mic, PenTool,
   ArrowLeft, Users, Calendar, Clock, ChevronRight, FileText, Play
 } from "lucide-react";
+import axios from "axios";
 
-const initialParents = [
-  { parentId: "P-1001", parentName: "Lakshmi Perera", childName: "Niru", contact: "+94 71 234 5678", lastVisit: "2025-02-12", trials: { eye: [62, 70], body: [55, 60], voice: [48, 52], handwriting: [40, 46] } },
-  { parentId: "P-1002", parentName: "Ahmed Rizwan", childName: "Zayan", contact: "+94 76 555 1122", lastVisit: "2025-02-15", trials: { eye: [58, 64], body: [52, 58], voice: [50, 56], handwriting: [42, 48] } },
-  { parentId: "P-1003", parentName: "Sanduni Jayasinghe", childName: "Tharun", contact: "+94 77 889 3311", lastVisit: "2025-02-18", trials: { eye: [65, 72], body: [60, 66], voice: [55, 61], handwriting: [48, 54] } }
-];
+import { AuthEndPoint } from "../utils/ApiRequest.js";
+import { authHeaders } from "../utils/authSession.js";
+import { normalizeApiList, normalizeApiRecord } from "../utils/apiNormalize.js";
+
+const emptyForm = {
+  parent_name: "",
+  child_name: "",
+  child_age: "",
+  contact_number: "",
+  notes: "",
+};
+
+const normalizePatient = (patient) => ({
+  ...patient,
+  parentId: patient.parentId || patient.parent_id,
+  parentName: patient.fullName || patient.full_name,
+  childName: patient.childName || patient.child_name,
+  contact: patient.phoneNumber || patient.contact_number,
+  lastVisit: (patient.createdAt || patient.created_at) ? new Date(patient.createdAt || patient.created_at).toLocaleDateString() : "N/A",
+  trials: { eye: [], body: [], voice: [], handwriting: [] },
+});
 
 const DoctorPanel = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [parents, setParents] = useState(initialParents);
+  const [patients, setPatients] = useState([]);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(initialParents[0] || null);
-  const [newParentName, setNewParentName] = useState("");
-  const [newParentContact, setNewParentContact] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [form, setForm] = useState(emptyForm);
   const [reviewText, setReviewText] = useState("");
   const [lastReview, setLastReview] = useState(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const filteredParents = parents.filter((p) => {
-    if (!search.trim()) return true;
+  const loadPatients = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data } = await axios.get(`${AuthEndPoint}/doctor/patients`, { headers: authHeaders() });
+      const normalized = normalizeApiList(data).map(normalizePatient);
+      setPatients(normalized);
+      setSelected((current) => {
+        if (current) {
+          return normalized.find((patient) => patient.parentId === current.parentId) || normalized[0] || null;
+        }
+        return normalized[0] || null;
+      });
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Failed to load patient records");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPatients();
+  }, []);
+
+  const filteredPatients = useMemo(() => {
+    if (!search.trim()) return patients;
     const term = search.toLowerCase();
-    return p.parentId.toLowerCase().includes(term) || p.parentName.toLowerCase().includes(term);
-  });
+    return patients.filter((patient) => {
+      return [patient.parentId, patient.parentName, patient.childName, patient.contact]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term));
+    });
+  }, [patients, search]);
 
-  const handleCreateParent = () => {
-    if (!newParentName.trim() || !newParentContact.trim()) return;
-    const nextIdNumber = 1000 + parents.length + 1;
-    const parentId = `P-${nextIdNumber}`;
-    const newParent = { parentId, parentName: newParentName.trim(), childName: t("doctor.childNamePending"), contact: newParentContact.trim(), lastVisit: t("doctor.notYet"), trials: { eye: [0, 0], body: [0, 0], voice: [0, 0], handwriting: [0, 0] } };
-    setParents((prev) => [...prev, newParent]);
-    setSelected(newParent);
-    setNewParentName("");
-    setNewParentContact("");
+  const handleCreateParent = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setError("");
+
+    try {
+      const payload = {
+        parent_name: form.parent_name,
+        child_name: form.child_name,
+        child_age: form.child_age ? Number(form.child_age) : null,
+        contact_number: form.contact_number,
+        notes: form.notes || null,
+      };
+      const { data } = await axios.post(`${AuthEndPoint}/doctor/patients`, payload, { headers: authHeaders() });
+      const normalized = normalizeApiRecord(data);
+      setMessage(`Parent account created. Parent ID: ${normalized.parentId}, Default password: ${normalized.defaultPassword || "TestP@1234"}`);
+      setForm(emptyForm);
+      await loadPatients();
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Failed to create parent account");
+    }
   };
 
   const handleSaveReview = () => {
@@ -71,8 +130,6 @@ const DoctorPanel = () => {
   return (
     <Dashboard roleLabel={t("doctor.dashboard")}>
       <div className="font-sans flex flex-col gap-6 max-w-7xl mx-auto mt-2 pb-8 animate-adhdSnap">
-
-        {/* Back Button & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
@@ -90,7 +147,7 @@ const DoctorPanel = () => {
           <div className="flex gap-2">
             <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full text-blue-400 text-xs font-semibold">
               <Users className="w-3.5 h-3.5" />
-              <span>{parents.length} Active Patients</span>
+              <span>{patients.length} Active Patients</span>
             </div>
             <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full text-emerald-400 text-xs font-semibold">
               <Clock className="w-3.5 h-3.5" />
@@ -99,12 +156,11 @@ const DoctorPanel = () => {
           </div>
         </div>
 
+        {message && <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{message}</div>}
+        {error && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>}
+
         <div className="grid gap-6 md:grid-cols-[2.2fr,1.2fr]">
-
-          {/* MAIN: patient list + detail */}
           <section className="flex flex-col gap-6">
-
-            {/* Patient List */}
             <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-clinic-surfaceDark to-slate-900 p-6 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 blur-[120px] pointer-events-none rounded-full"></div>
 
@@ -138,7 +194,11 @@ const DoctorPanel = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {filteredParents.length === 0 ? (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-12 text-center text-slate-500">Loading patients...</td>
+                      </tr>
+                    ) : filteredPatients.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
                           <Search className="w-8 h-8 mx-auto mb-3 opacity-20" />
@@ -146,36 +206,36 @@ const DoctorPanel = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredParents.map((p) => (
+                      filteredPatients.map((patient) => (
                         <tr
-                          key={p.parentId}
-                          onClick={() => setSelected(p)}
-                          className={`group cursor-pointer transition-colors ${selected && selected.parentId === p.parentId ? "bg-blue-500/10 border-blue-500/30" : "hover:bg-white/5"}`}
+                          key={patient.parentId}
+                          onClick={() => setSelected(patient)}
+                          className={`group cursor-pointer transition-colors ${selected && selected.parentId === patient.parentId ? "bg-blue-500/10 border-blue-500/30" : "hover:bg-white/5"}`}
                         >
                           <td className="px-4 py-3.5">
                             <span className="font-mono text-[11px] font-semibold text-slate-400 bg-slate-800/50 px-2 py-1 rounded-md border border-slate-700">
-                              {p.parentId}
+                              {patient.parentId}
                             </span>
                           </td>
                           <td className="px-4 py-3.5">
-                            <p className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">{p.childName}</p>
+                            <p className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">{patient.childName}</p>
                           </td>
                           <td className="px-4 py-3.5">
-                            <p className="text-xs text-slate-300">{p.parentName}</p>
-                            <p className="text-[10px] text-slate-500">{p.contact}</p>
+                            <p className="text-xs text-slate-300">{patient.parentName}</p>
+                            <p className="text-[10px] text-slate-500">{patient.contact}</p>
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="flex items-center gap-1.5 text-xs text-slate-400">
                               <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                              {p.lastVisit}
+                              {patient.lastVisit}
                             </div>
                           </td>
                           <td className="px-4 py-3.5 text-right">
                             <button
                               type="button"
-                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${selected && selected.parentId === p.parentId
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                : 'bg-black/40 text-slate-400 border border-slate-700 hover:border-blue-500/50 hover:text-blue-400'
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${selected && selected.parentId === patient.parentId
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                                : "bg-black/40 text-slate-400 border border-slate-700 hover:border-blue-500/50 hover:text-blue-400"
                                 }`}
                             >
                               <Eye className="h-3.5 w-3.5" />
@@ -190,7 +250,6 @@ const DoctorPanel = () => {
               </div>
             </div>
 
-            {/* Selected Patient Complete Details Panel */}
             {selected && (
               <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-black p-6 shadow-2xl relative animate-[fadeIn_0.5s_ease-out]">
                 <div className="flex border-b border-white/10 pb-4 mb-6">
@@ -208,7 +267,6 @@ const DoctorPanel = () => {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                  {/* Game Trial KPI Cards */}
                   <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
                     <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
                     <div className="flex items-center gap-2 mb-2">
@@ -246,7 +304,6 @@ const DoctorPanel = () => {
                   </div>
                 </div>
 
-                {/* Clinical Notes Section */}
                 <div className="rounded-2xl border border-slate-700/80 bg-slate-950 p-4">
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-sm font-bold text-white flex items-center gap-2">
@@ -285,10 +342,7 @@ const DoctorPanel = () => {
             )}
           </section>
 
-          {/* SIDEBAR */}
           <aside className="space-y-6">
-
-            {/* Quick Actions Panel */}
             <div className="rounded-3xl border border-slate-700/50 bg-black/40 p-5">
               <h3 className="text-sm font-bold text-white mb-4">Fast Actions</h3>
               <div className="grid grid-cols-1 gap-2">
@@ -307,7 +361,6 @@ const DoctorPanel = () => {
               </div>
             </div>
 
-            {/* Create Patient Module */}
             <div className="rounded-3xl bg-gradient-to-b from-slate-900 to-black p-6 shadow-xl border border-white/10 relative overflow-hidden group">
               <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500/10 blur-[50px] rounded-full pointer-events-none group-hover:bg-indigo-500/20 transition-colors"></div>
 
@@ -317,15 +370,35 @@ const DoctorPanel = () => {
               </h3>
               <p className="text-xs text-slate-400 mb-5 relative z-10">Generate a secure ID for a new family.</p>
 
-              <div className="space-y-3 relative z-10">
+              <form className="space-y-3 relative z-10" onSubmit={handleCreateParent}>
                 <div>
                   <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Guardian Full Name</label>
                   <input
                     type="text"
                     placeholder="e.g. John Doe"
                     className="w-full rounded-xl border border-slate-700/80 bg-black/50 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
-                    value={newParentName}
-                    onChange={(e) => setNewParentName(e.target.value)}
+                    value={form.parent_name}
+                    onChange={(e) => setForm((current) => ({ ...current, parent_name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Child Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Niru"
+                    className="w-full rounded-xl border border-slate-700/80 bg-black/50 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                    value={form.child_name}
+                    onChange={(e) => setForm((current) => ({ ...current, child_name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Child Age (optional)</label>
+                  <input
+                    type="number"
+                    placeholder="8"
+                    className="w-full rounded-xl border border-slate-700/80 bg-black/50 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                    value={form.child_age}
+                    onChange={(e) => setForm((current) => ({ ...current, child_age: e.target.value }))}
                   />
                 </div>
                 <div>
@@ -334,22 +407,30 @@ const DoctorPanel = () => {
                     type="text"
                     placeholder="+94 77 XXX XXXX"
                     className="w-full rounded-xl border border-slate-700/80 bg-black/50 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
-                    value={newParentContact}
-                    onChange={(e) => setNewParentContact(e.target.value)}
+                    value={form.contact_number}
+                    onChange={(e) => setForm((current) => ({ ...current, contact_number: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Notes</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Optional notes for the family"
+                    className="w-full rounded-xl border border-slate-700/80 bg-black/50 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                    value={form.notes}
+                    onChange={(e) => setForm((current) => ({ ...current, notes: e.target.value }))}
                   />
                 </div>
                 <button
-                  type="button"
-                  onClick={handleCreateParent}
-                  disabled={!newParentName.trim() || !newParentContact.trim()}
+                  type="submit"
+                  disabled={!form.parent_name.trim() || !form.child_name.trim() || !form.contact_number.trim()}
                   className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 hover:shadow-indigo-500/40 transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Generate Patient Record
                 </button>
-              </div>
+              </form>
             </div>
 
-            {/* Latest Review History */}
             {lastReview && (
               <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-3 opacity-10">
@@ -359,9 +440,7 @@ const DoctorPanel = () => {
                 <div className="relative z-10">
                   <p className="font-bold text-white text-sm">{lastReview.parentName} <span className="text-xs text-slate-400 font-normal">[{lastReview.parentId}]</span></p>
                   <p className="mt-1 text-[10px] text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3" /> {lastReview.time}</p>
-                  <div className="mt-3 text-xs text-slate-300 bg-black/30 p-3 rounded-xl border border-emerald-500/10">
-                    "{lastReview.text}"
-                  </div>
+                  <div className="mt-3 text-xs text-slate-300 bg-black/30 p-3 rounded-xl border border-emerald-500/10">"{lastReview.text}"</div>
                 </div>
               </div>
             )}
